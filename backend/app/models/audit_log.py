@@ -13,7 +13,7 @@ class AuditLog(Base):
     action = Column(String(100), nullable=False)
     entity_type = Column(String(50), nullable=True)
     entity_id = Column(Integer, nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    log_metadata = Column("metadata", JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     admin = relationship("Admin")
