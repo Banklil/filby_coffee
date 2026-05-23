@@ -13,7 +13,7 @@
       <button v-for="cat in categories" :key="cat.key" class="tab-btn" :class="filterCat === cat.key && 'active'" @click="filterCat = cat.key">{{ cat.label }}</button>
     </div>
 
-    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px; margin-top:0; padding:0;" class="card" style="padding:16px;">
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px; margin-top:0; padding:16px;" class="card">
       <template v-if="loading">
         <div v-for="i in 6" :key="i" class="skeleton" style="height:180px; border-radius:10px;"></div>
       </template>
