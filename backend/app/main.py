@@ -11,14 +11,38 @@ from . import models  # ensure all models are imported before create_all
 from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router
 
 
+def _ensure_default_admin():
+    from .database import SessionLocal
+    from .models.admin import Admin
+    from .core.security import get_password_hash
+    db = SessionLocal()
+    try:
+        if not db.query(Admin).filter(Admin.email == "admin@filby.la").first():
+            db.add(Admin(email="admin@filby.la", password_hash=get_password_hash("password123"), name="Super Admin", role="super_admin"))
+            db.add(Admin(email="manager@filby.la", password_hash=get_password_hash("password123"), name="ຜູ້ຈັດການ ສີດາ", role="manager"))
+            db.commit()
+            print(">>> Default admins created")
+    except Exception as e:
+        print(f">>> Admin seed warning: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import asyncio
     print(">>> Connecting to database and creating tables...")
-    try:
-        Base.metadata.create_all(bind=engine)
-        print(">>> Database ready")
-    except Exception as e:
-        print(f">>> DB warning: {e}")
+    for attempt in range(5):
+        try:
+            Base.metadata.create_all(bind=engine)
+            print(">>> Database ready")
+            _ensure_default_admin()
+            break
+        except Exception as e:
+            print(f">>> DB attempt {attempt + 1}/5 failed: {e}")
+            if attempt < 4:
+                await asyncio.sleep(5)
     yield
 
 
