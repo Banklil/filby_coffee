@@ -22,7 +22,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        origins = json.loads(self.CORS_ORIGINS)
+        try:
+            origins = json.loads(self.CORS_ORIGINS)
+        except (json.JSONDecodeError, ValueError):
+            origins = [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
         if self.FRONTEND_URL and self.FRONTEND_URL not in origins:
             origins.append(self.FRONTEND_URL)
         return origins
