@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -9,25 +10,35 @@ from . import models  # ensure all models are imported before create_all
 
 from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print(">>> Connecting to database and creating tables...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print(">>> Database ready")
+    except Exception as e:
+        print(f">>> DB warning: {e}")
+    yield
+
+
 app = FastAPI(
     title="Filby Coffee Admin API",
     description="Admin dashboard API for Filby Coffee B2B BNPL service",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
-    allow_origin_regex=r"https://.*\.railway\.app",  # allow all Railway domains
+    allow_origin_regex=r"https://.*\.railway\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Create tables on startup (dev mode — use Alembic in production)
-Base.metadata.create_all(bind=engine)
 
 # Static files for uploads
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
