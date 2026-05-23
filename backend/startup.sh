@@ -3,8 +3,8 @@
 echo "=== Filby Coffee Backend Starting ==="
 
 if [ "$SKIP_SEED" != "true" ]; then
-    echo ">>> Running seed data..."
-    python seed.py || echo ">>> Seed already ran or failed (continuing)"
+    echo ">>> Running seed data in background..."
+    python seed.py &
 fi
 
 echo ">>> Testing app import..."
