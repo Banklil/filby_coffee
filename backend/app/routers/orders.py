@@ -51,7 +51,7 @@ def update_order_status(
     order.status = data.status
     if data.tracking_number:
         order.tracking_number = data.tracking_number
-    db.add(AuditLog(admin_id=current_user.id, action="order.status_update", entity_type="order", entity_id=order_id, metadata={"status": data.status}))
+    db.add(AuditLog(admin_id=current_user.id, action="order.status_update", entity_type="order", entity_id=order_id, log_metadata={"status": data.status}))
     db.commit()
     return {"message": "ອັບເດດສະຖານະສຳເລັດ"}
 
@@ -68,7 +68,7 @@ def cancel_order(
     if order.status in ("delivered", "cancelled"):
         raise HTTPException(status_code=400, detail="ບໍ່ສາມາດຍົກເລີກຄຳສັ່ງຊື້ນີ້ໄດ້")
     order.status = "cancelled"
-    db.add(AuditLog(admin_id=current_user.id, action="order.cancel", entity_type="order", entity_id=order_id, metadata={"reason": data.reason}))
+    db.add(AuditLog(admin_id=current_user.id, action="order.cancel", entity_type="order", entity_id=order_id, log_metadata={"reason": data.reason}))
     db.commit()
     return {"message": "ຍົກເລີກຄຳສັ່ງຊື້ແລ້ວ"}
 

@@ -90,7 +90,7 @@ def update_credit_limit(shop_id: int, data: CreditLimitUpdate, db: Session = Dep
         raise HTTPException(status_code=404, detail="ບໍ່ພົບຮ້ານ")
     old_limit = shop.credit_limit
     shop.credit_limit = data.new_limit
-    db.add(AuditLog(admin_id=current_user.id, action="shop.credit_limit_update", entity_type="shop", entity_id=shop_id, metadata={"old": old_limit, "new": data.new_limit, "reason": data.reason}))
+    db.add(AuditLog(admin_id=current_user.id, action="shop.credit_limit_update", entity_type="shop", entity_id=shop_id, log_metadata={"old": old_limit, "new": data.new_limit, "reason": data.reason}))
     db.commit()
     return {"message": "ອັບເດດວົງເງິນສິນເຊື່ອແລ້ວ", "credit_limit": data.new_limit}
 

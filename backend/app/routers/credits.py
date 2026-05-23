@@ -95,6 +95,6 @@ def record_payment(data: PaymentRecord, db: Session = Depends(get_db), current_u
         description=data.notes or "ຈ່າຍຄືນສິນເຊື່ອ",
     )
     db.add(txn)
-    db.add(AuditLog(admin_id=current_user.id, action="credit.payment", entity_type="shop", entity_id=data.shop_id, metadata={"amount": data.amount}))
+    db.add(AuditLog(admin_id=current_user.id, action="credit.payment", entity_type="shop", entity_id=data.shop_id, log_metadata={"amount": data.amount}))
     db.commit()
     return {"message": "ບັນທຶກການຈ່າຍສຳເລັດ", "new_credit_used": shop.credit_used}

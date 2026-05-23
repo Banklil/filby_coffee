@@ -117,6 +117,6 @@ def request_info(
     app = db.query(Application).filter(Application.id == app_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="ບໍ່ພົບຄຳສະໝັກ")
-    db.add(AuditLog(admin_id=current_user.id, action="application.request_info", entity_type="application", entity_id=app_id, metadata={"message": data.message}))
+    db.add(AuditLog(admin_id=current_user.id, action="application.request_info", entity_type="application", entity_id=app_id, log_metadata={"message": data.message}))
     db.commit()
     return {"message": "ສົ່ງຂໍ້ຄວາມຂໍຂໍ້ມູນເພີ່ມເຕີມແລ້ວ"}
