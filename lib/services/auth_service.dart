@@ -51,7 +51,7 @@ class AuthService {
     if (token == null) return 'ກະລຸນາ Login ກ່ອນ';
     try {
       final res = await http.get(
-        Uri.parse('$_baseUrl/auth/me'),
+        Uri.parse('$_baseUrl/api/shop/me'),
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
@@ -68,7 +68,7 @@ class AuthService {
   static Future<String?> signInWithEmail(String email, String password) async {
     try {
       final res = await http.post(
-        Uri.parse('$_baseUrl/auth/login'),
+        Uri.parse('$_baseUrl/api/shop/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       ).timeout(const Duration(seconds: 10));
@@ -79,7 +79,7 @@ class AuthService {
         return null;
       }
       return body['detail'] ?? 'Login ບໍ່ສຳເລັດ';
-    } catch (_) {
+    } on Exception {
       return 'ບໍ່ສາມາດເຊື່ອມຕໍ່ server ກະລຸນາກວດ internet';
     }
   }
@@ -87,7 +87,7 @@ class AuthService {
   static Future<String?> signUpWithEmail(String email, String password, {String shopName = 'ຮ້ານຂອງຂ້ອຍ'}) async {
     try {
       final res = await http.post(
-        Uri.parse('$_baseUrl/auth/register'),
+        Uri.parse('$_baseUrl/api/shop/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password, 'shop_name': shopName}),
       ).timeout(const Duration(seconds: 10));
