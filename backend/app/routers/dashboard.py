@@ -119,3 +119,44 @@ def top_shops(
         Shop.credit_used.desc()
     ).limit(limit).all()
     return [{"name": s.name, "credit_used": s.credit_used, "tier": s.tier} for s in shops]
+
+
+@router.get("/charts/revenue-expense")
+def revenue_expense(
+    months: int = Query(12, ge=3, le=24),
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user)
+):
+    now = datetime.now(timezone.utc)
+    result = []
+    for i in range(months):
+        month_offset = months - 1 - i
+        year = now.year
+        month = now.month - month_offset
+        while month <= 0:
+            month += 12
+            year -= 1
+        month_start = datetime(year, month, 1, tzinfo=timezone.utc)
+        next_month = month + 1 if month < 12 else 1
+        next_year = year if month < 12 else year + 1
+        month_end = datetime(next_year, next_month, 1, tzinfo=timezone.utc)
+
+        revenue = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.type == "payment",
+            Transaction.created_at >= month_start,
+            Transaction.created_at < month_end
+        ).scalar() or 0
+
+        credit_issued = db.query(func.sum(Transaction.amount)).filter(
+            Transaction.type == "credit_use",
+            Transaction.created_at >= month_start,
+            Transaction.created_at < month_end
+        ).scalar() or 0
+
+        result.append({
+            "month": month_start.strftime("%m/%Y"),
+            "revenue": float(revenue),
+            "credit_issued": float(credit_issued),
+            "profit": float(revenue) - float(credit_issued),
+        })
+    return result

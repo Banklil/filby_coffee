@@ -15,6 +15,7 @@ export const dashboardApi = {
   recent: () => client.get('/api/dashboard/recent'),
   creditTrend: (days = 30) => client.get(`/api/dashboard/charts/credit-trend?days=${days}`),
   topShops: (limit = 10) => client.get(`/api/dashboard/charts/top-shops?limit=${limit}`),
+  revenueExpense: (months = 12) => client.get(`/api/dashboard/charts/revenue-expense?months=${months}`),
 }
 
 // Shops
