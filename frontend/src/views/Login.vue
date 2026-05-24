@@ -1,5 +1,5 @@
 <template>
-  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background: radial-gradient(ellipse at 20% 50%, rgba(232,133,74,0.08) 0%, transparent 60%), var(--bg-deep); padding:20px;">
+  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background: radial-gradient(ellipse at 20% 50%, rgba(27,41,81,0.6) 0%, transparent 60%), var(--bg-deep); padding:20px;">
     <div style="width:100%; max-width:400px;">
       <!-- Logo -->
       <div style="text-align:center; margin-bottom:40px;">

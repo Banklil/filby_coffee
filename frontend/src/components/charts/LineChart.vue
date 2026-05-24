@@ -24,14 +24,14 @@ function buildOption() {
     xAxis: {
       type: 'category',
       data: props.data.map(d => d.date),
-      axisLine: { lineStyle: { color: 'rgba(255,250,243,0.08)' } },
-      axisLabel: { color: 'rgba(255,250,243,0.4)', fontSize: 10, fontFamily: 'Noto Sans Lao, sans-serif', interval: Math.floor(props.data.length / 6) },
+      axisLine: { lineStyle: { color: 'rgba(180,210,255,0.08)' } },
+      axisLabel: { color: 'rgba(240,244,255,0.4)', fontSize: 10, fontFamily: 'Noto Sans Lao, sans-serif', interval: Math.floor(props.data.length / 6) },
       splitLine: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: 'rgba(255,250,243,0.4)', fontSize: 10, fontFamily: 'Noto Sans Lao, sans-serif', formatter: v => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v },
-      splitLine: { lineStyle: { color: 'rgba(255,250,243,0.05)' } },
+      axisLabel: { color: 'rgba(240,244,255,0.4)', fontSize: 10, fontFamily: 'Noto Sans Lao, sans-serif', formatter: v => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v },
+      splitLine: { lineStyle: { color: 'rgba(180,210,255,0.05)' } },
       axisLine: { show: false },
     },
     series: [{
@@ -43,7 +43,7 @@ function buildOption() {
       lineStyle: { color: props.color, width: 2 },
       areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: props.color + '40' }, { offset: 1, color: props.color + '00' }] } },
     }],
-    tooltip: { trigger: 'axis', backgroundColor: '#251812', borderColor: 'rgba(255,230,200,0.14)', textStyle: { color: '#FFFAF3', fontSize: 12 }, formatter: params => `${params[0].name}<br/><b>${Number(params[0].value).toLocaleString()} ກີບ</b>` },
+    tooltip: { trigger: 'axis', backgroundColor: '#0F1828', borderColor: 'rgba(180,210,255,0.14)', textStyle: { color: '#F0F4FF', fontSize: 12 }, formatter: params => `${params[0].name}<br/><b>${Number(params[0].value).toLocaleString()} ກີບ</b>` },
   }
 }
 

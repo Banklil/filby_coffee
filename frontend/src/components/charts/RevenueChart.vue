@@ -27,9 +27,9 @@ function buildOption() {
     legend: { show: false },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#251812',
-      borderColor: 'rgba(255,230,200,0.14)',
-      textStyle: { color: '#FFFAF3', fontSize: 12 },
+      backgroundColor: '#0F1828',
+      borderColor: 'rgba(180,210,255,0.14)',
+      textStyle: { color: '#F0F4FF', fontSize: 12 },
       formatter(params) {
         const fmt = v => Number(v).toLocaleString()
         let s = `<b>${params[0].name}</b><br/>`
@@ -44,18 +44,18 @@ function buildOption() {
       type: 'category',
       data: months,
       axisLabel: { color: 'rgba(255,250,243,0.5)', fontSize: 10 },
-      axisLine: { lineStyle: { color: 'rgba(255,250,243,0.08)' } },
+      axisLine: { lineStyle: { color: 'rgba(180,210,255,0.08)' } },
       splitLine: { show: false },
     },
     yAxis: [
       {
         type: 'value',
         axisLabel: {
-          color: 'rgba(255,250,243,0.4)',
+          color: 'rgba(240,244,255,0.4)',
           fontSize: 10,
           formatter: v => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v,
         },
-        splitLine: { lineStyle: { color: 'rgba(255,250,243,0.05)' } },
+        splitLine: { lineStyle: { color: 'rgba(180,210,255,0.05)' } },
         axisLine: { show: false },
       },
     ],
