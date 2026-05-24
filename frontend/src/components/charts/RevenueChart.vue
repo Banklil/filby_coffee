@@ -22,15 +22,8 @@ function buildOption() {
 
   return {
     backgroundColor: 'transparent',
-    grid: { top: 36, right: 24, bottom: 36, left: 72 },
-    legend: {
-      top: 4,
-      right: 0,
-      textStyle: { color: 'rgba(255,250,243,0.6)', fontSize: 11 },
-      itemWidth: 12,
-      itemHeight: 8,
-      data: ['ລາຍຮັບ', 'ສິນເຊື່ອອອກ', 'ກຳໄລ/ຂາດທຶນ'],
-    },
+    grid: { top: 12, right: 16, bottom: 32, left: 72 },
+    legend: { show: false },
     tooltip: {
       trigger: 'axis',
       backgroundColor: '#251812',

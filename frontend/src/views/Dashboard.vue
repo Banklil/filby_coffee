@@ -1,5 +1,5 @@
 <template>
-  <div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; flex-direction:column; gap:16px;">
 
     <!-- Header -->
     <div style="display:flex; align-items:center; justify-content:space-between;">
@@ -19,19 +19,19 @@
 
     <!-- Revenue / Expense Chart (full width) -->
     <div class="card">
-      <div class="card-header" style="margin-bottom:4px;">
-        <div>
+      <div class="card-header">
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
           <span style="font-size:14px; font-weight:600; color:var(--text);">ລາຍຮັບ & ສິນເຊື່ອ & ກຳໄລ/ຂາດທຶນ</span>
-          <span style="font-size:11px; color:var(--text-muted); margin-left:8px;">12 ເດືອນຜ່ານມາ</span>
+          <span style="font-size:11px; color:var(--text-muted);">12 ເດືອນຜ່ານມາ</span>
         </div>
-        <div style="display:flex; gap:16px; font-size:11px;">
-          <span style="color:#6EE7A7;">■ ລາຍຮັບ</span>
-          <span style="color:#E8854A;">■ ສິນເຊື່ອອອກ</span>
-          <span style="color:#FACC15;">— ກຳໄລ/ຂາດທຶນ</span>
+        <div style="display:flex; gap:14px; font-size:11px; color:rgba(255,250,243,0.65);">
+          <span><span style="display:inline-block;width:10px;height:10px;background:#6EE7A7;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>ລາຍຮັບ</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#E8854A;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>ສິນເຊື່ອອອກ</span>
+          <span><span style="display:inline-block;width:18px;height:2px;background:#FACC15;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>ກຳໄລ/ຂາດທຶນ</span>
         </div>
       </div>
-      <div v-if="revenueLoading" class="skeleton" style="height:260px;"></div>
-      <RevenueChart v-else :data="revenueExpense" :height="260" />
+      <div v-if="revenueLoading" class="skeleton" style="height:240px;"></div>
+      <RevenueChart v-else :data="revenueExpense" :height="240" />
     </div>
 
     <!-- Bottom Row: Credit Trend + Top Shops + Activity -->
