@@ -17,8 +17,7 @@ class AuthUser {
 }
 
 class AuthService {
-  // ປ່ຽນ URL ນີ້ຫຼັງຈາກ deploy ໄປ Railway
-  static const String _baseUrl = 'https://filbycoffee-production.up.railway.app';
+  static const String baseUrl = 'https://filbycoffee-production.up.railway.app';
 
   static AuthUser? _currentUser;
   static AuthUser? get currentUser => _currentUser;
@@ -51,7 +50,7 @@ class AuthService {
     if (token == null) return 'ກະລຸນາ Login ກ່ອນ';
     try {
       final res = await http.get(
-        Uri.parse('$_baseUrl/api/shop/me'),
+        Uri.parse('$baseUrl/api/shop/me'),
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
@@ -68,7 +67,7 @@ class AuthService {
   static Future<String?> signInWithEmail(String email, String password) async {
     try {
       final res = await http.post(
-        Uri.parse('$_baseUrl/api/shop/login'),
+        Uri.parse('$baseUrl/api/shop/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       ).timeout(const Duration(seconds: 10));
@@ -87,7 +86,7 @@ class AuthService {
   static Future<String?> signUpWithEmail(String email, String password, {String shopName = 'ຮ້ານຂອງຂ້ອຍ'}) async {
     try {
       final res = await http.post(
-        Uri.parse('$_baseUrl/api/shop/register'),
+        Uri.parse('$baseUrl/api/shop/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password, 'shop_name': shopName}),
       ).timeout(const Duration(seconds: 10));
@@ -105,6 +104,10 @@ class AuthService {
 
   static Future<void> signOut() async {
     await _clearToken();
+  }
+
+  static Future<http.Response> httpGet(Uri uri, Map<String, String> headers) async {
+    return http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
   }
 
   static Future<Map<String, String>> authHeaders() async {

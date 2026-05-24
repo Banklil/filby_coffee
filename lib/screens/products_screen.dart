@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
+import '../services/auth_service.dart';
 import 'cart_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -12,22 +14,50 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   int _catIndex = 0;
-  final Map<String, int> _cart = {};
+  final Map<int, int> _cart = {};
+  List<_Product> _products = [];
+  bool _loading = true;
+  String? _error;
+  String _search = '';
 
   final List<String> _cats = ['ທັງໝົດ', 'ອາຣາບິກາ', 'ເຣນາສຕ້າ', 'ອຸປະກອນ'];
 
-  final List<_Product> _products = const [
-    _Product(emoji: '☕', name: 'ກໍ່ລະແວກ ອາຣາບິກາ', cat: 'ອາຣາບິກາ', price: 95000, unit: 'ກິໂລ'),
-    _Product(emoji: '☕', name: 'ກາເຟ ເຣນາສຕ້າ', cat: 'ເຣນາສຕ້າ', price: 65000, unit: 'ກິໂລ'),
-    _Product(emoji: '🫘', name: 'ກໍ່ລະແວກ ຊາດຄ', cat: 'ອາຣາບິກາ', price: 120000, unit: 'ກິໂລ'),
-    _Product(emoji: '🥛', name: 'ນົມຂາ້ວ UHT', cat: 'ອຸປະກອນ', price: 18000, unit: 'ລິດ'),
-    _Product(emoji: '🍫', name: 'ຊັອກໂກແລດຝຸ່ນ', cat: 'ອຸປະກອນ', price: 45000, unit: 'ກິໂລ'),
-    _Product(emoji: '🧁', name: 'ນ້ຳຕານທໍລານີ', cat: 'ອຸປະກອນ', price: 12000, unit: 'ກິໂລ'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await AuthService.httpGet(
+        Uri.parse('${AuthService.baseUrl}/api/shop/products'),
+        headers,
+      );
+      if (res.statusCode == 200) {
+        final List data = jsonDecode(res.body);
+        setState(() {
+          _products = data.map((j) => _Product.fromJson(j)).toList();
+          _loading = false;
+        });
+      } else {
+        setState(() { _loading = false; _error = 'ດາວໂຫຼດສິນຄ້າລົ້ມເຫລວ'; });
+      }
+    } catch (_) {
+      setState(() { _loading = false; _error = 'ບໍ່ສາມາດເຊື່ອມຕໍ່ server'; });
+    }
+  }
 
   List<_Product> get _filtered {
-    if (_catIndex == 0) return _products;
-    return _products.where((p) => p.cat == _cats[_catIndex]).toList();
+    var list = _catIndex == 0
+        ? _products
+        : _products.where((p) => p.category == _cats[_catIndex]).toList();
+    if (_search.isNotEmpty) {
+      list = list.where((p) => p.name.toLowerCase().contains(_search.toLowerCase())).toList();
+    }
+    return list;
   }
 
   int get _cartTotal => _cart.values.fold(0, (a, b) => a + b);
@@ -45,20 +75,28 @@ class _ProductsScreenState extends State<ProductsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'ສິນຄ້າທັງໝົດ',
-                    style: GoogleFonts.notoSerifLao(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: FilbyColors.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'ສິນຄ້າທັງໝົດ',
+                        style: GoogleFonts.notoSerifLao(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: FilbyColors.textPrimary,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: _loadProducts,
+                        child: const Icon(Icons.refresh, size: 20, color: FilbyColors.textMuted),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  _SearchBar(),
+                  _SearchBar(onChanged: (v) => setState(() => _search = v)),
                 ],
               ),
             ),
-            // Category tabs
             SizedBox(
               height: 36,
               child: ListView.separated(
@@ -74,9 +112,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     decoration: BoxDecoration(
                       color: _catIndex == i ? FilbyColors.cream : FilbyColors.surface,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: _catIndex == i ? FilbyColors.cream : FilbyColors.border,
-                      ),
+                      border: Border.all(color: _catIndex == i ? FilbyColors.cream : FilbyColors.border),
                     ),
                     child: Text(
                       _cats[i],
@@ -91,36 +127,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.85,
-                ),
-                itemCount: _filtered.length,
-                itemBuilder: (_, i) {
-                  final p = _filtered[i];
-                  final qty = _cart[p.name] ?? 0;
-                  return _ProductCard(
-                    product: p,
-                    qty: qty,
-                    onAdd: () => setState(() => _cart[p.name] = (qty) + 1),
-                    onRemove: qty > 0
-                        ? () => setState(() {
-                              if (qty == 1) {
-                                _cart.remove(p.name);
-                              } else {
-                                _cart[p.name] = qty - 1;
-                              }
-                            })
-                        : null,
-                  );
-                },
-              ),
-            ),
+            Expanded(child: _buildBody()),
           ],
         ),
       ),
@@ -128,18 +135,73 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ? FloatingActionButton.extended(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
               backgroundColor: FilbyColors.primary,
-              label: Text(
-                'ໄປຕະກ້ວາ ($_cartTotal)',
-                style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-              ),
+              label: Text('ໄປຕະກ້ວາ ($_cartTotal)', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
               icon: const Icon(Icons.shopping_cart, color: Colors.white),
             )
           : null,
     );
   }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: FilbyColors.primary));
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off, size: 48, color: FilbyColors.textMuted),
+            const SizedBox(height: 12),
+            Text(_error!, style: const TextStyle(color: FilbyColors.textMuted, fontSize: 13)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadProducts,
+              style: ElevatedButton.styleFrom(backgroundColor: FilbyColors.primary, foregroundColor: Colors.white),
+              child: const Text('ລອງໃໝ່'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_filtered.isEmpty) {
+      return const Center(
+        child: Text('ບໍ່ມີສິນຄ້າ', style: TextStyle(color: FilbyColors.textMuted, fontSize: 14)),
+      );
+    }
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: _filtered.length,
+      itemBuilder: (_, i) {
+        final p = _filtered[i];
+        final qty = _cart[p.id] ?? 0;
+        return _ProductCard(
+          product: p,
+          qty: qty,
+          onAdd: () => setState(() => _cart[p.id] = qty + 1),
+          onRemove: qty > 0
+              ? () => setState(() {
+                    if (qty == 1) _cart.remove(p.id);
+                    else _cart[p.id] = qty - 1;
+                  })
+              : null,
+        );
+      },
+    );
+  }
 }
 
+
 class _SearchBar extends StatelessWidget {
+  final ValueChanged<String> onChanged;
+  const _SearchBar({required this.onChanged});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -149,15 +211,16 @@ class _SearchBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: FilbyColors.border),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(width: 12),
-          Icon(Icons.search, size: 18, color: FilbyColors.textMuted),
-          SizedBox(width: 8),
+          const SizedBox(width: 12),
+          const Icon(Icons.search, size: 18, color: FilbyColors.textMuted),
+          const SizedBox(width: 8),
           Expanded(
             child: TextField(
-              style: TextStyle(fontSize: 13, color: FilbyColors.textPrimary),
-              decoration: InputDecoration(
+              onChanged: onChanged,
+              style: const TextStyle(fontSize: 13, color: FilbyColors.textPrimary),
+              decoration: const InputDecoration(
                 hintText: 'ຄົ້ນຫາສິນຄ້າ...',
                 hintStyle: TextStyle(fontSize: 13, color: FilbyColors.textMuted),
                 border: InputBorder.none,
@@ -172,19 +235,42 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _Product {
-  final String emoji;
+  final int id;
   final String name;
-  final String cat;
+  final String category;
   final int price;
   final String unit;
+  final double stock;
+  final String? imageUrl;
 
   const _Product({
-    required this.emoji,
+    required this.id,
     required this.name,
-    required this.cat,
+    required this.category,
     required this.price,
     required this.unit,
+    required this.stock,
+    this.imageUrl,
   });
+
+  factory _Product.fromJson(Map<String, dynamic> j) => _Product(
+        id: j['id'],
+        name: j['name'],
+        category: j['category'] ?? 'ອື່ນໆ',
+        price: j['price'],
+        unit: j['unit'] ?? 'ກິໂລ',
+        stock: (j['stock_qty'] ?? 0).toDouble(),
+        imageUrl: j['image_url'],
+      );
+
+  String get emoji {
+    switch (category.toLowerCase()) {
+      case 'ອາຣາບິກາ': return '☕';
+      case 'ເຣນາສຕ້າ': return '☕';
+      case 'ອຸປະກອນ': return '🛒';
+      default: return '📦';
+    }
+  }
 }
 
 class _ProductCard extends StatelessWidget {
@@ -193,12 +279,7 @@ class _ProductCard extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback? onRemove;
 
-  const _ProductCard({
-    required this.product,
-    required this.qty,
-    required this.onAdd,
-    this.onRemove,
-  });
+  const _ProductCard({required this.product, required this.qty, required this.onAdd, this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +292,6 @@ class _ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image area
           Expanded(
             child: Container(
               width: double.infinity,
@@ -223,25 +303,17 @@ class _ProductCard extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
               ),
-              child: Center(
-                child: Text(product.emoji, style: const TextStyle(fontSize: 42)),
-              ),
+              child: Center(child: Text(product.emoji, style: const TextStyle(fontSize: 42))),
             ),
           ),
-          // Info
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(product.name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
-                Text(product.cat, style: const TextStyle(fontSize: 9, color: FilbyColors.textMuted)),
+                Text(product.category, style: const TextStyle(fontSize: 9, color: FilbyColors.textMuted)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -249,72 +321,24 @@ class _ProductCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _formatNum(product.price),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: FilbyColors.primary,
-                          ),
-                        ),
-                        Text(
-                          'ກີບ/${product.unit}',
-                          style: const TextStyle(fontSize: 9, color: FilbyColors.textMuted),
-                        ),
+                        Text(_fmt(product.price), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: FilbyColors.primary)),
+                        Text('ກີບ/${product.unit}', style: const TextStyle(fontSize: 9, color: FilbyColors.textMuted)),
                       ],
                     ),
                     qty == 0
                         ? GestureDetector(
                             onTap: onAdd,
                             child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: FilbyColors.cream,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.add, size: 16, color: FilbyColors.bg),
-                              ),
+                              width: 28, height: 28,
+                              decoration: BoxDecoration(color: FilbyColors.cream, borderRadius: BorderRadius.circular(8)),
+                              child: const Center(child: Icon(Icons.add, size: 16, color: FilbyColors.bg)),
                             ),
                           )
                         : Row(
                             children: [
-                              GestureDetector(
-                                onTap: onRemove,
-                                child: Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: FilbyColors.surface3,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(Icons.remove, size: 12, color: FilbyColors.textPrimary),
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 6),
-                                child: Text(
-                                  '$qty',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: onAdd,
-                                child: Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: FilbyColors.primary,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(Icons.add, size: 12, color: Colors.white),
-                                  ),
-                                ),
-                              ),
+                              GestureDetector(onTap: onRemove, child: Container(width: 24, height: 24, decoration: BoxDecoration(color: FilbyColors.surface3, borderRadius: BorderRadius.circular(6)), child: const Center(child: Icon(Icons.remove, size: 12, color: FilbyColors.textPrimary)))),
+                              Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('$qty', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+                              GestureDetector(onTap: onAdd, child: Container(width: 24, height: 24, decoration: BoxDecoration(color: FilbyColors.primary, borderRadius: BorderRadius.circular(6)), child: const Center(child: Icon(Icons.add, size: 12, color: Colors.white)))),
                             ],
                           ),
                   ],
@@ -327,7 +351,7 @@ class _ProductCard extends StatelessWidget {
     );
   }
 
-  String _formatNum(int n) {
+  String _fmt(int n) {
     final s = n.toString();
     final buf = StringBuffer();
     for (int i = 0; i < s.length; i++) {

@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
+from typing import Optional, List
 from ..database import get_db
 from ..models.shop_owner import ShopOwner
+from ..models.product import Product
 from ..core.security import verify_password, get_password_hash, create_access_token, create_refresh_token, decode_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -80,3 +82,30 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=OwnerOut)
 def me(owner: ShopOwner = Depends(_get_owner)):
     return owner
+
+
+# ---- Products (shared catalog managed by admin web) ----
+
+class ProductOut(BaseModel):
+    id: int
+    name: str
+    category: str
+    price: int
+    unit: Optional[str] = None
+    stock_qty: float
+    image_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/products", response_model=List[ProductOut])
+def get_products(
+    category: Optional[str] = None,
+    db: Session = Depends(get_db),
+    owner: ShopOwner = Depends(_get_owner),
+):
+    q = db.query(Product).filter(Product.active == True)
+    if category:
+        q = q.filter(Product.category == category)
+    return q.order_by(Product.category, Product.name).all()
