@@ -4,7 +4,7 @@
     <!-- Header -->
     <div style="display:flex; align-items:center; justify-content:space-between;">
       <div>
-        <h1 style="font-family:'Noto Serif Lao', serif; font-size:20px; font-weight:700; color:var(--cream);">Dashboard</h1>
+        <h1 style=" font-size:20px; font-weight:700; color:var(--cream);">Dashboard</h1>
         <p style="color:var(--text-muted); font-size:13px; margin-top:2px;">ພາບລວມທຸລະກິດ Filby Coffee</p>
       </div>
     </div>

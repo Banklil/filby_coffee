@@ -13,7 +13,7 @@
         </div>
         <div style="flex:1;">
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <h1 style="font-family:'Noto Serif Lao', serif; font-size:18px; font-weight:700; color:var(--cream);">{{ shop.name }}</h1>
+            <h1 style=" font-size:18px; font-weight:700; color:var(--cream);">{{ shop.name }}</h1>
             <span :class="statusClass(shop.status)">{{ statusLabel(shop.status) }}</span>
             <span :class="tierClass(shop.tier)" style="font-size:12px; font-weight:700;">★ {{ tierLabel(shop.tier) }}</span>
           </div>

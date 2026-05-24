@@ -2,7 +2,7 @@
   <div>
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
       <div>
-        <h1 style="font-family:'Noto Serif Lao', serif; font-size:20px; font-weight:700; color:var(--cream);">ຄຳສະໝັກສິນເຊື່ອ</h1>
+        <h1 style=" font-size:20px; font-weight:700; color:var(--cream);">ຄຳສະໝັກສິນເຊື່ອ</h1>
         <p style="font-size:13px; color:var(--text-muted);">ທັງໝົດ {{ total }} ຄຳສະໝັກ</p>
       </div>
     </div>

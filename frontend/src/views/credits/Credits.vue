@@ -1,7 +1,7 @@
 <template>
   <div>
     <div style="margin-bottom:24px;">
-      <h1 style="font-family:'Noto Serif Lao', serif; font-size:20px; font-weight:700; color:var(--cream);">ສິນເຊື່ອ & ການຊຳລະ</h1>
+      <h1 style=" font-size:20px; font-weight:700; color:var(--cream);">ສິນເຊື່ອ & ການຊຳລະ</h1>
     </div>
 
     <!-- Overview KPIs -->

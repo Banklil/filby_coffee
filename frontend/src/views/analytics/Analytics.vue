@@ -2,7 +2,7 @@
   <div>
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
       <div>
-        <h1 style="font-family:'Noto Serif Lao', serif; font-size:20px; font-weight:700; color:var(--cream);">Analytics</h1>
+        <h1 style=" font-size:20px; font-weight:700; color:var(--cream);">Analytics</h1>
         <p style="font-size:13px; color:var(--text-muted);">ຂໍ້ມູນ ແລະ ການວິເຄາະທຸລະກິດ</p>
       </div>
       <select v-model="days" class="input" style="width:auto;" @change="loadRevenue">

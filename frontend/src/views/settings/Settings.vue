@@ -1,7 +1,7 @@
 <template>
   <div>
     <div style="margin-bottom:24px;">
-      <h1 style="font-family:'Noto Serif Lao', serif; font-size:20px; font-weight:700; color:var(--cream);">ຕັ້ງຄ່າ</h1>
+      <h1 style=" font-size:20px; font-weight:700; color:var(--cream);">ຕັ້ງຄ່າ</h1>
     </div>
 
     <div class="tab-nav">

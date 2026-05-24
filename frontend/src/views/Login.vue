@@ -6,7 +6,7 @@
         <div style="width:60px; height:60px; background:linear-gradient(135deg, var(--primary), var(--primary-deep)); border-radius:18px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
           <Coffee :size="28" color="#fff" />
         </div>
-        <h1 style="font-family:'Noto Serif Lao', serif; font-size:22px; font-weight:700; color:var(--cream);">Filby Coffee</h1>
+        <h1 style=" font-size:22px; font-weight:700; color:var(--cream);">Filby Coffee</h1>
         <p style="color:var(--text-muted); font-size:13px; margin-top:4px;">Admin Dashboard</p>
       </div>
 
@@ -41,11 +41,6 @@
           </button>
         </form>
 
-        <div style="margin-top:20px; padding:12px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted);">
-          <div style="font-weight:600; margin-bottom:4px; color:var(--text-secondary);">Demo accounts:</div>
-          <div>admin@filby.la / password123</div>
-          <div>manager@filby.la / password123</div>
-        </div>
       </div>
     </div>
   </div>
@@ -59,8 +54,8 @@ import { useAuthStore } from '@/stores/auth.js'
 
 const authStore = useAuthStore()
 const router = useRouter()
-const email = ref('admin@filby.la')
-const password = ref('password123')
+const email = ref('')
+const password = ref('')
 const showPassword = ref(false)
 const loading = ref(false)
 
