@@ -3,7 +3,7 @@
     <div style="width:100%; max-width:400px;">
       <!-- Logo -->
       <div style="text-align:center; margin-bottom:40px;">
-        <img src="/logo.png" alt="Filby Coffee" style="width:100px; height:100px; object-fit:contain; margin:0 auto 12px; display:block;"
+        <img src="/logo.png" alt="Filby Coffee" style="width:120px; height:120px; object-fit:contain; margin:0 auto 8px; display:block;"
           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
         <div style="display:none; width:60px; height:60px; background:linear-gradient(135deg,var(--primary),var(--primary-deep)); border-radius:18px; align-items:center; justify-content:center; margin:0 auto 16px;">
           <Coffee :size="28" color="#fff" />

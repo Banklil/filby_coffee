@@ -3,7 +3,7 @@
     <!-- Logo -->
     <div style="padding: 20px 20px 16px; border-bottom: 1px solid var(--border);">
       <div style="display:flex; align-items:center; gap:10px;">
-        <img src="/logo.png" alt="Filby Coffee" style="width:36px; height:36px; object-fit:contain; border-radius:8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
+        <img src="/logo.png" alt="Filby Coffee" style="width:44px; height:44px; object-fit:contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
         <div style="display:none; width:36px; height:36px; background:linear-gradient(135deg,var(--primary),var(--primary-deep)); border-radius:10px; align-items:center; justify-content:center;">
           <Coffee :size="18" color="#fff" />
         </div>
