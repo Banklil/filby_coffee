@@ -24,6 +24,7 @@ function buildOption() {
   const isH = props.horizontal
   return {
     backgroundColor: 'transparent',
+    textStyle: { fontFamily: 'Noto Sans Lao, sans-serif' },
     grid: { top: 10, right: 20, bottom: isH ? 10 : 30, left: isH ? 120 : 50 },
     [isH ? 'xAxis' : 'yAxis']: { type: 'value', axisLabel: { color: 'rgba(255,250,243,0.4)', fontSize: 10, formatter: v => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v }, splitLine: { lineStyle: { color: 'rgba(255,250,243,0.05)' } }, axisLine: { show: false } },
     [isH ? 'yAxis' : 'xAxis']: { type: 'category', data: labels, axisLabel: { color: 'rgba(255,250,243,0.55)', fontSize: 11 }, axisLine: { lineStyle: { color: 'rgba(255,250,243,0.08)' } }, splitLine: { show: false } },

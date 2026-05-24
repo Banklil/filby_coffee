@@ -3,12 +3,13 @@
     <!-- Logo -->
     <div style="padding: 20px 20px 16px; border-bottom: 1px solid var(--border);">
       <div style="display:flex; align-items:center; gap:10px;">
-        <div style="width:36px; height:36px; background: linear-gradient(135deg, var(--primary), var(--primary-deep)); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <img src="/logo.png" alt="Filby Coffee" style="width:36px; height:36px; object-fit:contain; border-radius:8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
+        <div style="display:none; width:36px; height:36px; background:linear-gradient(135deg,var(--primary),var(--primary-deep)); border-radius:10px; align-items:center; justify-content:center;">
           <Coffee :size="18" color="#fff" />
         </div>
         <div>
-          <div style="font-family: 'Noto Serif Lao', serif; font-weight: 700; font-size: 15px; color: var(--cream);">Filby Coffee</div>
-          <div style="font-size: 10px; color: var(--text-muted);">Admin Dashboard</div>
+          <div style="font-weight:700; font-size:15px; color:var(--cream);">Filby Coffee</div>
+          <div style="font-size:10px; color:var(--text-muted);">Admin Dashboard</div>
         </div>
       </div>
     </div>

@@ -20,16 +20,17 @@ function buildOption() {
   return {
     backgroundColor: 'transparent',
     grid: { top: 10, right: 10, bottom: 30, left: 50 },
+    textStyle: { fontFamily: 'Noto Sans Lao, sans-serif' },
     xAxis: {
       type: 'category',
       data: props.data.map(d => d.date),
       axisLine: { lineStyle: { color: 'rgba(255,250,243,0.08)' } },
-      axisLabel: { color: 'rgba(255,250,243,0.4)', fontSize: 10, interval: Math.floor(props.data.length / 6) },
+      axisLabel: { color: 'rgba(255,250,243,0.4)', fontSize: 10, fontFamily: 'Noto Sans Lao, sans-serif', interval: Math.floor(props.data.length / 6) },
       splitLine: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: 'rgba(255,250,243,0.4)', fontSize: 10, formatter: v => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v },
+      axisLabel: { color: 'rgba(255,250,243,0.4)', fontSize: 10, fontFamily: 'Noto Sans Lao, sans-serif', formatter: v => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v },
       splitLine: { lineStyle: { color: 'rgba(255,250,243,0.05)' } },
       axisLine: { show: false },
     },

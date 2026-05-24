@@ -22,6 +22,7 @@ function buildOption() {
 
   return {
     backgroundColor: 'transparent',
+    textStyle: { fontFamily: 'Noto Sans Lao, sans-serif' },
     grid: { top: 12, right: 16, bottom: 32, left: 72 },
     legend: { show: false },
     tooltip: {
