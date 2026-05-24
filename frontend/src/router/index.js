@@ -18,6 +18,7 @@ const routes = [
       { path: 'analytics', component: () => import('@/views/analytics/Analytics.vue') },
       { path: 'reports', component: () => import('@/views/reports/Reports.vue') },
       { path: 'settings', component: () => import('@/views/settings/Settings.vue') },
+      { path: 'prospects', component: () => import('@/views/prospects/Prospects.vue') },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },

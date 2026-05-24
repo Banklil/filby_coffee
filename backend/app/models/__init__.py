@@ -5,3 +5,4 @@ from .order import Order
 from .transaction import Transaction
 from .product import Product
 from .audit_log import AuditLog
+from .prospect import Prospect

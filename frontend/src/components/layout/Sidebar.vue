@@ -61,7 +61,7 @@
 
 <script setup>
 import { RouterLink, useRouter } from 'vue-router'
-import { Coffee, LayoutDashboard, Store, FileText, ShoppingBag, CreditCard, Package, BarChart2, FileBarChart, Settings, LogOut } from 'lucide-vue-next'
+import { Coffee, LayoutDashboard, Store, FileText, ShoppingBag, CreditCard, Package, BarChart2, FileBarChart, Settings, LogOut, ClipboardList } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth.js'
 
 const authStore = useAuthStore()
@@ -82,6 +82,12 @@ const navGroups = [
       { to: '/orders', label: 'ຄຳສັ່ງຊື້', icon: ShoppingBag },
       { to: '/credits', label: 'ສິນເຊື່ອ & ຊຳລະ', icon: CreditCard },
       { to: '/products', label: 'ສິນຄ້າ', icon: Package },
+    ],
+  },
+  {
+    label: 'ສຳຫຼວດ',
+    items: [
+      { to: '/prospects', label: 'ສຳຫຼວດຮ້ານ', icon: ClipboardList },
     ],
   },
   {

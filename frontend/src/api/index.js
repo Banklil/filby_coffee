@@ -82,6 +82,16 @@ export const reportsApi = {
   shopStatement: (shopId, month) => client.get(`/api/reports/shop/${shopId}/statement?month=${month}`, { responseType: 'blob' }),
 }
 
+// Prospects
+export const prospectsApi = {
+  list: (params) => client.get('/api/prospects', { params }),
+  get: (id) => client.get(`/api/prospects/${id}`),
+  create: (data) => client.post('/api/prospects', data),
+  update: (id, data) => client.put(`/api/prospects/${id}`, data),
+  delete: (id) => client.delete(`/api/prospects/${id}`),
+  analytics: () => client.get('/api/prospects/analytics'),
+}
+
 // Settings
 export const settingsApi = {
   listAdmins: () => client.get('/api/admins'),
