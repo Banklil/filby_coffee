@@ -3,10 +3,10 @@
     <div style="width:100%; max-width:400px;">
       <!-- Logo -->
       <div style="text-align:center; margin-bottom:40px;">
-        <img src="/logo.png" alt="Filby Coffee" style="width:120px; height:120px; object-fit:contain; margin:0 auto 8px; display:block;"
-          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
-        <div style="display:none; width:60px; height:60px; background:linear-gradient(135deg,var(--primary),var(--primary-deep)); border-radius:18px; align-items:center; justify-content:center; margin:0 auto 16px;">
-          <Coffee :size="28" color="#fff" />
+        <div style="width:110px; height:110px; border-radius:50%; background:#fff; padding:8px; margin:0 auto 16px; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+          <img src="/logo.png" alt="Filby Coffee" style="width:100%; height:100%; object-fit:contain; border-radius:50%;"
+            onerror="this.closest('div').style.background='linear-gradient(135deg,var(--primary),var(--primary-deep))'; this.style.display='none'; this.nextElementSibling.style.display='flex'" />
+          <Coffee style="display:none; width:100%; height:100%; align-items:center; justify-content:center;" :size="44" color="#fff" />
         </div>
         <h1 style="font-size:22px; font-weight:700; color:var(--cream);">Filby Coffee</h1>
         <p style="color:var(--text-muted); font-size:13px; margin-top:4px;">Admin Dashboard</p>
