@@ -7,3 +7,4 @@ from .product import Product
 from .audit_log import AuditLog
 from .prospect import Prospect
 from .shop_owner import ShopOwner
+from .finance import FinanceEntry

@@ -9,6 +9,7 @@ from ..models.shop import Shop
 from ..models.application import Application
 from ..models.order import Order
 from ..models.transaction import Transaction
+from ..models.finance import FinanceEntry
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -39,6 +40,30 @@ def get_kpis(db: Session = Depends(get_db), current_user: Admin = Depends(get_cu
     if prev_revenue > 0:
         revenue_change = round(((monthly_revenue - prev_revenue) / prev_revenue) * 100, 1)
 
+    # Finance summary
+    month_start_date = month_start.date() if hasattr(month_start, 'date') else month_start
+    from datetime import date as date_type
+    month_start_d = date_type(now.year, now.month, 1)
+    next_m = now.month + 1 if now.month < 12 else 1
+    next_y = now.year if now.month < 12 else now.year + 1
+    month_end_d = date_type(next_y, next_m, 1)
+
+    finance_income = db.query(func.sum(FinanceEntry.amount)).filter(
+        FinanceEntry.type == "income",
+        FinanceEntry.entry_date >= month_start_d,
+        FinanceEntry.entry_date < month_end_d,
+    ).scalar() or 0
+
+    finance_expense = db.query(func.sum(FinanceEntry.amount)).filter(
+        FinanceEntry.type == "expense",
+        FinanceEntry.entry_date >= month_start_d,
+        FinanceEntry.entry_date < month_end_d,
+    ).scalar() or 0
+
+    total_capital = db.query(func.sum(FinanceEntry.amount)).filter(
+        FinanceEntry.type == "capital"
+    ).scalar() or 0
+
     return {
         "total_shops": total_shops,
         "new_shops_this_month": new_shops_this_month,
@@ -46,6 +71,10 @@ def get_kpis(db: Session = Depends(get_db), current_user: Admin = Depends(get_cu
         "pending_apps": pending_apps,
         "monthly_revenue": monthly_revenue,
         "revenue_change": revenue_change,
+        "finance_income": int(finance_income),
+        "finance_expense": int(finance_expense),
+        "finance_net": int(finance_income) - int(finance_expense),
+        "total_capital": int(total_capital),
     }
 
 

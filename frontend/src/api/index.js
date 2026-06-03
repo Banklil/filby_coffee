@@ -92,6 +92,16 @@ export const prospectsApi = {
   analytics: () => client.get('/api/prospects/analytics'),
 }
 
+// Finance
+export const financeApi = {
+  summary: (params) => client.get('/api/finance/summary', { params }),
+  categories: () => client.get('/api/finance/categories'),
+  list: (params) => client.get('/api/finance', { params }),
+  create: (data) => client.post('/api/finance', data),
+  update: (id, data) => client.put(`/api/finance/${id}`, data),
+  delete: (id) => client.delete(`/api/finance/${id}`),
+}
+
 // Settings
 export const settingsApi = {
   listAdmins: () => client.get('/api/admins'),

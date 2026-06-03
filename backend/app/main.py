@@ -8,7 +8,7 @@ from .config import settings
 from .database import engine, Base
 from . import models  # ensure all models are imported before create_all
 
-from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router, prospects, shop_auth
+from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router, prospects, shop_auth, finance
 
 
 def _ensure_default_admin():
@@ -80,6 +80,7 @@ app.include_router(reports.router)
 app.include_router(settings_router.router)
 app.include_router(prospects.router)
 app.include_router(shop_auth.router)
+app.include_router(finance.router)
 
 
 @app.get("/")

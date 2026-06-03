@@ -9,12 +9,29 @@
       </div>
     </div>
 
-    <!-- KPI Cards -->
+    <!-- KPI Cards Row 1: Operations -->
     <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px;">
       <KpiCard label="ຮ້ານທັງໝົດ" :value="formatNumber(kpis?.total_shops)" :sub="`+${kpis?.new_shops_this_month || 0} ໃໝ່ເດືອນນີ້`" :icon="Store" icon-bg="rgba(110,231,167,0.1)" icon-color="var(--success)" :loading="kpiLoading" />
       <KpiCard label="ສິນເຊື່ອທີ່ໃຊ້ຢູ່" :value="formatCompact(kpis?.active_credit) + ' ກີບ'" :icon="CreditCard" :loading="kpiLoading" />
       <KpiCard label="ຄຳສະໝັກລໍຖ້າ" :value="formatNumber(kpis?.pending_apps)" sub="ຕ້ອງ Review" :icon="FileText" icon-bg="rgba(251,191,36,0.1)" icon-color="var(--warning)" :loading="kpiLoading" />
       <KpiCard label="ລາຍຮັບເດືອນນີ້" :value="formatCompact(kpis?.monthly_revenue) + ' ກີບ'" :sub="kpis?.revenue_change > 0 ? `+${kpis.revenue_change}%` : `${kpis?.revenue_change || 0}%`" :trend="kpis?.revenue_change" :icon="TrendingUp" :loading="kpiLoading" />
+    </div>
+
+    <!-- KPI Cards Row 2: Finance -->
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px;">
+      <KpiCard label="ທຶນລວມ" :value="formatCompact(kpis?.total_capital) + ' ກີບ'" :icon="Landmark" icon-bg="rgba(99,179,237,0.1)" icon-color="#63B3ED" :loading="kpiLoading" sub-label="ທຶນທີ່ລົງທຶນທັງໝົດ" />
+      <KpiCard label="ລາຍຮັບເດືອນນີ້" :value="formatCompact(kpis?.finance_income) + ' ກີບ'" :icon="ArrowDownCircle" icon-bg="rgba(110,231,167,0.1)" icon-color="var(--success)" :loading="kpiLoading" sub-label="ລາຍຮັບຈາກການດຳເນີນງານ" />
+      <KpiCard label="ລາຍຈ່າຍເດືອນນີ້" :value="formatCompact(kpis?.finance_expense) + ' ກີບ'" :icon="ArrowUpCircle" icon-bg="rgba(248,113,113,0.1)" icon-color="var(--danger)" :loading="kpiLoading" sub-label="ຄ່າໃຊ້ຈ່າຍດຳເນີນງານ" />
+      <KpiCard
+        label="ກຳໄລ / ຂາດທຶນ"
+        :value="(kpis?.finance_net >= 0 ? '+' : '') + formatCompact(kpis?.finance_net) + ' ກີບ'"
+        :icon="TrendingUp"
+        :icon-bg="(kpis?.finance_net ?? 0) >= 0 ? 'rgba(110,231,167,0.1)' : 'rgba(248,113,113,0.1)'"
+        :icon-color="(kpis?.finance_net ?? 0) >= 0 ? 'var(--success)' : 'var(--danger)'"
+        :trend="kpis?.finance_net"
+        :loading="kpiLoading"
+        sub-label="ເດືອນນີ້ (ລາຍຮັບ - ລາຍຈ່າຍ)"
+      />
     </div>
 
     <!-- Revenue / Expense Chart (full width) -->
@@ -99,7 +116,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Store, CreditCard, FileText, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-vue-next'
+import { Store, CreditCard, FileText, TrendingUp, CheckCircle, AlertTriangle, Landmark, ArrowDownCircle, ArrowUpCircle } from 'lucide-vue-next'
 import KpiCard from '@/components/dashboard/KpiCard.vue'
 import LineChart from '@/components/charts/LineChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
