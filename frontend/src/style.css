@@ -152,7 +152,7 @@ html, body, #app {
 .topbar { height: 60px; background: var(--bg-deep); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; position: fixed; top: 0; right: 0; left: 240px; z-index: 99; }
 
 /* Main content area */
-.main-content { margin-left: 240px; margin-top: 60px; min-height: calc(100vh - 60px); padding: 24px; background: var(--bg); }
+.main-content { margin-top: 60px; min-height: calc(100vh - 60px); padding: 24px; background: var(--bg); width: 100%; }
 
 /* KPI card */
 .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s; }

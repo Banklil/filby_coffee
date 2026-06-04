@@ -1,7 +1,7 @@
 <template>
   <div style="display:flex; min-height:100vh;">
     <Sidebar />
-    <div style="flex:1; margin-left:240px; display:flex; flex-direction:column;">
+    <div class="flex-1 w-full flex flex-col" style="margin-left:240px;">
       <TopBar />
       <main class="main-content">
         <RouterView />
