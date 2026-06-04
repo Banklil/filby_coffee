@@ -22,7 +22,7 @@
   --warning: #FBBF24;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Lao', sans-serif; }
 
 html, body, #app {
   height: 100%;
@@ -32,6 +32,12 @@ html, body, #app {
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Force Noto Sans Lao on all form elements (browser default often overrides) */
+input, select, textarea, button, optgroup {
+  font-family: 'Noto Sans Lao', sans-serif;
+  font-size: inherit;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

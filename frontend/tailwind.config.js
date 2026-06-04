@@ -18,6 +18,7 @@ export default {
         warning: '#FBBF24',
       },
       fontFamily: {
+        sans: ['"Noto Sans Lao"', 'sans-serif'],
         display: ['"Noto Serif Lao"', 'serif'],
         body: ['"Noto Sans Lao"', 'sans-serif'],
         mono: ['Manrope', 'monospace'],
