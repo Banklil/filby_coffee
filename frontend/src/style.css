@@ -148,8 +148,8 @@ input, select, textarea, button, optgroup {
 .page-btn.active { background: var(--primary); color: var(--bg); border-color: var(--primary); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Numbers use Manrope */
-.num { font-family: 'Manrope', monospace; }
+/* Numbers: Manrope for digits, fall back to Noto Sans Lao for Lao characters */
+.num { font-family: 'Manrope', 'Noto Sans Lao', sans-serif; }
 
 /* Sidebar */
 .sidebar { width: 240px; min-height: 100vh; background: var(--bg-deep); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; }

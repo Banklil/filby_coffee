@@ -12,7 +12,7 @@
       <div class="skeleton" style="height:14px; width:40%;"></div>
     </template>
     <template v-else>
-      <div class="num" style="font-size:26px; font-weight:700; color:var(--text); line-height:1.2;">{{ value }}</div>
+      <div style="font-size:26px; font-weight:700; color:var(--text); line-height:1.2; font-family:'Noto Sans Lao', sans-serif;">{{ value }}</div>
       <div v-if="sub" style="display:flex; align-items:center; gap:6px; margin-top:6px;">
         <span :class="changeClass" style="font-size:12px; font-weight:600; display:flex; align-items:center; gap:2px;">
           <TrendingUp v-if="changePositive" :size="12" />
