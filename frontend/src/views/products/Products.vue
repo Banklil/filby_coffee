@@ -20,7 +20,7 @@
       <template v-else-if="filteredProducts.length">
         <div v-for="p in filteredProducts" :key="p.id" style="background:var(--surface-2); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:border-color 0.2s;" class="product-card">
           <div style="height:100px; background:var(--surface-3); display:flex; align-items:center; justify-content:center; position:relative;">
-            <img v-if="p.image_url" :src="p.image_url" style="width:100%; height:100%; object-fit:cover;" />
+            <img v-if="p.image_url" :src="getImageUrl(p.image_url)" style="width:100%; height:100%; object-fit:cover;" @error="e => e.target.style.display='none'" />
             <Package v-else :size="32" color="var(--text-muted)" />
             <span v-if="!p.active" style="position:absolute; top:6px; right:6px; background:rgba(248,113,113,0.9); color:#fff; font-size:10px; padding:2px 6px; border-radius:4px;">ປິດ</span>
           </div>
@@ -142,6 +142,13 @@ function catLabel(k) {
   return categories.find(c => c.key === k)?.label || k
 }
 
+function getImageUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+  return base + url
+}
+
 const filteredProducts = computed(() => {
   if (filterCat.value === 'all') return products.value
   return products.value.filter(p => p.category === filterCat.value)
@@ -206,9 +213,13 @@ async function handleStockUpdate() {
 
 async function handleDelete(p) {
   if (!confirm(`ລຶບ "${p.name}"?`)) return
-  await productsApi.delete(p.id)
-  toast.success('ລຶບສິນຄ້າສຳເລັດ')
-  loadProducts()
+  try {
+    await productsApi.delete(p.id)
+    toast.success('ລຶບສິນຄ້າສຳເລັດ')
+    loadProducts()
+  } catch (e) {
+    toast.error(e.response?.data?.detail || 'ລຶບບໍ່ສຳເລັດ — ຕ້ອງມີສິດ super_admin')
+  }
 }
 
 onMounted(loadProducts)

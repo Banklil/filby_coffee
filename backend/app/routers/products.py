@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 
 @router.get("", response_model=List[ProductOut])
 def list_products(db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    return db.query(Product).order_by(Product.category, Product.name).all()
+    return db.query(Product).filter(Product.active == True).order_by(Product.category, Product.name).all()
 
 
 @router.post("", response_model=ProductOut)
