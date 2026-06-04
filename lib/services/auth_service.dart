@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +18,7 @@ class AuthUser {
 }
 
 class AuthService {
-  static const String baseUrl = 'https://filbycoffee-production.up.railway.app';
+  static const String baseUrl = 'https://valiant-ambition-production.up.railway.app';
 
   static AuthUser? _currentUser;
   static AuthUser? get currentUser => _currentUser;
@@ -52,7 +53,7 @@ class AuthService {
       final res = await http.get(
         Uri.parse('$baseUrl/api/shop/me'),
         headers: {'Authorization': 'Bearer $token'},
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
       if (res.statusCode == 200) {
         _currentUser = AuthUser.fromJson(jsonDecode(res.body));
         return null;
@@ -70,16 +71,21 @@ class AuthService {
         Uri.parse('$baseUrl/api/shop/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
+      if (res.headers['content-type']?.contains('application/json') != true) {
+        return 'HTTP ${res.statusCode} — server returned non-JSON (wrong URL?)';
+      }
       final body = jsonDecode(res.body);
       if (res.statusCode == 200) {
         await _saveToken(body['access_token']);
         _currentUser = AuthUser.fromJson(body['user']);
         return null;
       }
-      return body['detail'] ?? 'Login ບໍ່ສຳເລັດ';
-    } on Exception {
-      return 'ບໍ່ສາມາດເຊື່ອມຕໍ່ server ກະລຸນາກວດ internet';
+      return body['detail'] ?? 'Login ບໍ່ສຳເລັດ (${res.statusCode})';
+    } on TimeoutException {
+      return 'Server ໃຊ້ເວລາດົນ — ລອງໃໝ່ອີກຄັ້ງ';
+    } on Exception catch (e) {
+      return 'Error: ${e.toString().substring(0, e.toString().length.clamp(0, 80))}';
     }
   }
 
@@ -89,7 +95,7 @@ class AuthService {
         Uri.parse('$baseUrl/api/shop/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password, 'shop_name': shopName}),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
       final body = jsonDecode(res.body);
       if (res.statusCode == 200) {
         await _saveToken(body['access_token']);
@@ -97,8 +103,10 @@ class AuthService {
         return null;
       }
       return body['detail'] ?? 'ສ້າງບັນຊີບໍ່ສຳເລັດ';
-    } catch (_) {
-      return 'ບໍ່ສາມາດເຊື່ອມຕໍ່ server ກະລຸນາກວດ internet';
+    } on TimeoutException {
+      return 'Server ໃຊ້ເວລາດົນ — ລອງໃໝ່ອີກຄັ້ງ';
+    } on Exception catch (e) {
+      return 'Error: ${e.toString().substring(0, e.toString().length.clamp(0, 80))}';
     }
   }
 
@@ -107,7 +115,7 @@ class AuthService {
   }
 
   static Future<http.Response> httpGet(Uri uri, Map<String, String> headers) async {
-    return http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+    return http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
   }
 
   static Future<Map<String, String>> authHeaders() async {
