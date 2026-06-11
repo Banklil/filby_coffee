@@ -119,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ShoppingBag, ChevronLeft, ChevronRight, X } from 'lucide-vue-next'
 import { ordersApi } from '@/api/index.js'
 import { useToastStore } from '@/stores/toast.js'
@@ -169,14 +169,17 @@ function isOverdue(o) {
   return new Date(o.payment_due_date) < new Date()
 }
 
-async function load(p = 1) {
-  loading.value = true
+async function load(p = 1, showLoader = true) {
+  if (showLoader) loading.value = true
   page.value = p
-  const { data } = await ordersApi.list({ page: p, limit: 50, status: filterStatus.value || undefined })
-  orders.value = data.items
-  total.value = data.total
-  totalPages.value = data.pages
-  loading.value = false
+  try {
+    const { data } = await ordersApi.list({ page: p, limit: 50, status: filterStatus.value || undefined })
+    orders.value = data.items
+    total.value = data.total
+    totalPages.value = data.pages
+  } finally {
+    loading.value = false
+  }
 }
 
 function changeStatus(s) { filterStatus.value = s; load(1) }
@@ -210,5 +213,10 @@ async function handleCancel() {
   toast.success('ຍົກເລີກຄຳສັ່ງຊື້ແລ້ວ')
 }
 
-onMounted(() => load())
+let _poll = null
+onMounted(() => {
+  load()
+  _poll = setInterval(() => load(page.value, false), 15_000)
+})
+onUnmounted(() => clearInterval(_poll))
 </script>

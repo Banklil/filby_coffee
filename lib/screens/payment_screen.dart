@@ -1,0 +1,278 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import '../theme.dart';
+import '../services/auth_service.dart';
+import '../services/cart_manager.dart';
+
+class PaymentScreen extends StatefulWidget {
+  final int total;
+  final List<CartItem> items;
+
+  const PaymentScreen({super.key, required this.total, required this.items});
+
+  @override
+  State<PaymentScreen> createState() => _PaymentScreenState();
+}
+
+class _PaymentScreenState extends State<PaymentScreen> {
+  int _method = 0; // 0=QR, 1=Cash
+  bool _done = false;
+  bool _submitting = false;
+
+  String _fmt(int n) {
+    final s = n.toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
+  Future<void> _confirmPayment() async {
+    setState(() => _submitting = true);
+    try {
+      final headers = await AuthService.authHeaders();
+      final payMethod = _method == 0 ? 'qr' : 'cash';
+
+      for (final item in widget.items) {
+        final res = await http.post(
+          Uri.parse('${AuthService.baseUrl}/api/orders/beans'),
+          headers: headers,
+          body: jsonEncode({
+            'product_id':   item.productId,
+            'product_name': item.name,
+            'quantity':     item.qty.toDouble(),
+            'unit_price':   item.price.toDouble(),
+            'total_price':  (item.price * item.qty).toDouble(),
+            'note':         'ວິທີຈ່າຍ: $payMethod',
+          }),
+        ).timeout(const Duration(seconds: 30));
+
+        if (res.statusCode != 200 && res.statusCode != 201) {
+          final body = jsonDecode(utf8.decode(res.bodyBytes));
+          throw Exception(body['detail'] ?? 'ເກີດຂໍ້ຜິດພາດ (${res.statusCode})');
+        }
+      }
+
+      CartManager.instance.clear();
+      if (mounted) setState(() { _done = true; _submitting = false; });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('ສ້າງ order ລົ້ມເຫຼວ: $e'),
+          backgroundColor: const Color(0xFFE74C3C),
+        ));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_done) {
+      return Scaffold(
+        backgroundColor: FilbyColors.bg,
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80, height: 80,
+                  decoration: BoxDecoration(color: FilbyColors.successBg, shape: BoxShape.circle),
+                  child: const Icon(Icons.check_circle, size: 48, color: FilbyColors.success),
+                ),
+                const SizedBox(height: 20),
+                Text('ຊຳລະສຳເລັດ', style: GoogleFonts.notoSerifLao(fontSize: 22, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
+                const SizedBox(height: 8),
+                Text('${_fmt(widget.total)} ກີບ', style: const TextStyle(fontSize: 16, color: FilbyColors.primary, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FilbyColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  ),
+                  child: const Text('ກັບໜ້າຫຼັກ', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: FilbyColors.bg,
+      appBar: AppBar(
+        backgroundColor: FilbyColors.bg,
+        title: Text('ຊຳລະເງິນ', style: GoogleFonts.notoSerifLao(fontSize: 18, fontWeight: FontWeight.w700)),
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            // Total
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [FilbyColors.navy, FilbyColors.navySoft],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                children: [
+                  const Text('ຍອດທີ່ຕ້ອງຊຳລະ', style: TextStyle(fontSize: 12, color: FilbyColors.textSecondary)),
+                  const SizedBox(height: 8),
+                  Text('${_fmt(widget.total)} ກີບ',
+                    style: GoogleFonts.manrope(fontSize: 32, fontWeight: FontWeight.w800, color: FilbyColors.primary)),
+                  const SizedBox(height: 4),
+                  Text('${widget.items.length} ລາຍການ', style: const TextStyle(fontSize: 12, color: FilbyColors.textMuted)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Payment method selector
+            const Text('ເລືອກວິທີຊຳລະ', style: TextStyle(fontSize: 12, color: FilbyColors.textSecondary, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _MethodBtn(icon: Icons.qr_code, label: 'QR Code', selected: _method == 0, onTap: () => setState(() => _method = 0))),
+                const SizedBox(width: 10),
+                Expanded(child: _MethodBtn(icon: Icons.money, label: 'ເງິນສົດ', selected: _method == 1, onTap: () => setState(() => _method = 1))),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // QR or Cash content
+            if (_method == 0) _buildQR() else _buildCash(),
+
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _submitting ? null : _confirmPayment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: FilbyColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: _submitting
+                    ? const SizedBox(width: 22, height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                    : Text(
+                        _method == 0 ? 'ຂ້ອຍສະແກນແລ້ວ — ຢືນຢັນ' : 'ຢືນຢັນຮັບເງິນສົດ',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQR() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          // Logo
+          Image.asset('assets/logo.jpeg', width: 80, height: 80),
+          const SizedBox(height: 12),
+          const Text('FILBY COFFEE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1B2B4B))),
+          const Text('PREMIUM COFFEE ROASTERS', style: TextStyle(fontSize: 10, color: Color(0xFF1B2B4B))),
+          const SizedBox(height: 16),
+          // QR placeholder
+          Container(
+            width: 200, height: 200,
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFF1B2B4B), width: 2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.qr_code_2, size: 120, color: Color(0xFF1B2B4B)),
+                Text('ກຳລັງລໍຖ້າ QR ຈາກ Filby', style: TextStyle(fontSize: 10, color: Color(0xFF1B2B4B))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('ສະແກນ QR ເພື່ອໂອນເງິນ', style: TextStyle(fontSize: 13, color: Color(0xFF1B2B4B), fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          const Text('BCEL One · LDB · Unitel Money', style: TextStyle(fontSize: 11, color: Color(0xFF888888))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCash() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: FilbyColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: FilbyColors.border),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.money, size: 56, color: FilbyColors.success),
+          const SizedBox(height: 12),
+          Text('${_fmt(widget.total)} ກີບ',
+            style: GoogleFonts.manrope(fontSize: 28, fontWeight: FontWeight.w800, color: FilbyColors.textPrimary)),
+          const SizedBox(height: 8),
+          const Text('ກະລຸນາຈ່າຍເງິນສົດໃຫ້ພະນັກງານ', style: TextStyle(fontSize: 13, color: FilbyColors.textSecondary)),
+          const SizedBox(height: 4),
+          const Text('ແລ້ວກົດ "ຢືນຢັນຮັບເງິນສົດ" ດ້ານລຸ່ມ', style: TextStyle(fontSize: 12, color: FilbyColors.textMuted)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MethodBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _MethodBtn({required this.icon, required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? FilbyColors.primary : FilbyColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: selected ? FilbyColors.primary : FilbyColors.border),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 24, color: selected ? Colors.white : FilbyColors.textMuted),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : FilbyColors.textPrimary)),
+          ],
+        ),
+      ),
+    );
+  }
+}
