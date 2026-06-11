@@ -86,9 +86,13 @@ app.include_router(credit_apps.router)
 app.include_router(merchant_report.router)
 app.include_router(admin_stats.router)
 
-# ── Socket.IO real-time ──────────────────────────────────────────────
-from .ws_manager import socket_asgi
-app.mount("/socket.io", socket_asgi)
+# ── Socket.IO real-time (optional — skipped if package missing) ──────
+try:
+    from .ws_manager import socket_asgi
+    app.mount("/socket.io", socket_asgi)
+    print(">>> Socket.IO mounted at /socket.io")
+except Exception as _ws_err:
+    print(f">>> Socket.IO skipped: {_ws_err}")
 
 
 @app.get("/")
