@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from ..database import get_db
 from ..models.shop_owner import ShopOwner
+from ..models.shop import Shop
 from ..models.product import Product
 from ..core.security import verify_password, get_password_hash, create_access_token, create_refresh_token, decode_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -37,7 +38,7 @@ class LoginRequest(BaseModel):
 class OwnerOut(BaseModel):
     id: int
     email: str
-    shop_name: str
+    shop_name: str = "ຮ້ານຂອງຂ້ອຍ"
 
     class Config:
         from_attributes = True
@@ -58,6 +59,24 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email ນີ້ຖືກໃຊ້ແລ້ວ")
     owner = ShopOwner(email=body.email, password_hash=get_password_hash(body.password), shop_name=body.shop_name)
     db.add(owner)
+    db.flush()
+
+    # Auto-create Shop record for admin dashboard visibility
+    count = db.query(Shop).count()
+    shop_id = f"FC{str(count + 1).zfill(4)}"
+    shop = Shop(
+        shop_id=shop_id,
+        name=body.shop_name,
+        owner_name=body.shop_name,
+        phone="—",
+        email=body.email,
+        province="ວຽງຈັນ",
+        status="pending",
+        tier="bronze",
+        credit_limit=0,
+        credit_used=0,
+    )
+    db.add(shop)
     db.commit()
     db.refresh(owner)
     return TokenResponse(
@@ -69,14 +88,20 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)):
-    owner = db.query(ShopOwner).filter(ShopOwner.email == body.email, ShopOwner.active == True).first()
-    if not owner or not verify_password(body.password, owner.password_hash):
-        raise HTTPException(status_code=401, detail="Email ຫຼື ລະຫັດຜ່ານບໍ່ຖືກ")
-    return TokenResponse(
-        access_token=create_access_token({"sub": str(owner.id)}),
-        refresh_token=create_refresh_token({"sub": str(owner.id)}),
-        user=OwnerOut.model_validate(owner),
-    )
+    try:
+        owner = db.query(ShopOwner).filter(ShopOwner.email == body.email, ShopOwner.active == True).first()
+        if not owner or not verify_password(body.password, owner.password_hash):
+            raise HTTPException(status_code=401, detail="Email ຫຼື ລະຫັດຜ່ານບໍ່ຖືກ")
+        return TokenResponse(
+            access_token=create_access_token({"sub": str(owner.id)}),
+            refresh_token=create_refresh_token({"sub": str(owner.id)}),
+            user=OwnerOut.model_validate(owner),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[LOGIN ERROR] {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"Server error: {type(e).__name__}")
 
 
 @router.get("/me", response_model=OwnerOut)

@@ -25,7 +25,7 @@ socket_asgi = socketio.ASGIApp(sio, socketio_path="")
 
 # ── Lifecycle ────────────────────────────────────────────────────────
 @sio.event
-async def connect(sid: str, environ: dict, auth: dict | None = None):
+async def connect(sid: str, environ: dict, auth: Optional[Dict] = None):
     user = await _verify_token((auth or {}).get("token", ""))
     if not user:
         raise ConnectionRefusedError("unauthorized")
