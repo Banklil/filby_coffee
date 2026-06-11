@@ -79,6 +79,32 @@ async def submit_application(
     db.commit()
     db.refresh(app)
 
+    # ── Mirror to admin applications table ───────────────────────────
+    try:
+        from ..models.application import Application
+        from ..models.shop import Shop
+
+        shop = db.query(Shop).filter(Shop.email == owner.email).first()
+        db.add(Application(
+            ref_id=f"CA{app.id:06d}",
+            shop_id=shop.id if shop else None,
+            credit_requested=int(body.amount),
+            purpose=body.purpose,
+            shop_data={
+                "name":           body.full_name,
+                "phone":          body.phone,
+                "id_card":        body.id_card,
+                "business_name":  body.business_name,
+                "monthly_income": body.monthly_income,
+                "owner_email":    owner.email,
+            },
+            status="pending",
+        ))
+        db.commit()
+    except Exception as _e:
+        print(f"[WARN] credit→admin mirror: {_e}")
+        db.rollback()
+
     # ── Real-time broadcast ──────────────────────────────────────────
     try:
         from ..ws_manager import notify_new_credit_application

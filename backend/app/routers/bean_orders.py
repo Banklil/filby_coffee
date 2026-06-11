@@ -81,6 +81,44 @@ async def create_bean_order(
     db.commit()
     db.refresh(order)
 
+    # ── Mirror to admin orders table so dashboard sees it ────────────
+    try:
+        from ..models.shop import Shop
+        from ..models.order import Order
+        from sqlalchemy import func as _f
+
+        shop = db.query(Shop).filter(Shop.email == owner.email).first()
+        if not shop:
+            count = db.query(_f.count(Shop.id)).scalar() or 0
+            shop = Shop(
+                shop_id=f"FC{str(count + 1).zfill(4)}",
+                name=owner.shop_name or owner.email,
+                owner_name=owner.shop_name or owner.email,
+                phone="—", email=owner.email,
+                province="ວຽງຈັນ", status="active",
+                tier="bronze", credit_limit=0, credit_used=0,
+            )
+            db.add(shop)
+            db.flush()
+
+        db.add(Order(
+            order_id=f"BO{order.id:06d}",
+            shop_id=shop.id,
+            amount=int(order.total_price),
+            items=[{
+                "name": order.product_name,
+                "qty": order.quantity,
+                "unit_price": float(order.unit_price),
+                "bean_order_id": order.id,
+            }],
+            status="pending",
+            payment_method="credit",
+        ))
+        db.commit()
+    except Exception as _e:
+        print(f"[WARN] bean→admin mirror: {_e}")
+        db.rollback()
+
     # ── Real-time broadcast to all admin sockets ─────────────────────
     try:
         from ..ws_manager import notify_new_bean_order
@@ -93,7 +131,7 @@ async def create_bean_order(
             "created_at":   str(order.created_at),
         })
     except Exception:
-        pass  # WebSocket errors must never break the HTTP response
+        pass
 
     return _out(order)
 
