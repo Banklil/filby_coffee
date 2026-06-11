@@ -18,13 +18,16 @@ router = APIRouter(prefix="/api/orders/beans", tags=["bean-orders"])
 
 # ── Schemas ─────────────────────────────────────────────────────────
 class BeanOrderCreate(BaseModel):
-    product_id:    int
-    product_name:  str
-    quantity:      float
-    unit_price:    float
-    total_price:   float
-    delivery_date: Optional[date] = None
-    note:          Optional[str]  = None
+    product_id:       int
+    product_name:     str
+    quantity:         float
+    unit:             Optional[str]  = None
+    unit_price:       float
+    total_price:      float
+    delivery_date:    Optional[date] = None
+    note:             Optional[str]  = None
+    delivery_address: Optional[str]  = None
+    phone:            Optional[str]  = None
 
 
 class BeanOrderOut(BaseModel):
@@ -33,6 +36,7 @@ class BeanOrderOut(BaseModel):
     product_id:    int
     product_name:  str
     quantity:      float
+    unit:          Optional[str]
     unit_price:    float
     total_price:   float
     status:        str
@@ -71,12 +75,18 @@ async def create_bean_order(
         product_id    = body.product_id,
         product_name  = body.product_name,
         quantity      = body.quantity,
+        unit          = body.unit,
         unit_price    = body.unit_price,
         total_price   = body.total_price,
         delivery_date = body.delivery_date,
         note          = body.note,
         status        = "processing",
     )
+    # Save phone/address to owner profile if provided and not yet set
+    if body.phone and not owner.phone:
+        owner.phone = body.phone
+    if body.delivery_address and not owner.address:
+        owner.address = body.delivery_address
     db.add(order)
     db.commit()
     db.refresh(order)
@@ -101,6 +111,13 @@ async def create_bean_order(
             db.add(shop)
             db.flush()
 
+        addr_parts = []
+        if body.phone or owner.phone:
+            addr_parts.append(f"ເບີ: {body.phone or owner.phone}")
+        if body.delivery_address or owner.address:
+            addr_parts.append(body.delivery_address or owner.address)
+        shipping_address = " | ".join(addr_parts) or None
+
         db.add(Order(
             order_id=f"BO{order.id:06d}",
             shop_id=shop.id,
@@ -108,11 +125,13 @@ async def create_bean_order(
             items=[{
                 "name": order.product_name,
                 "qty": order.quantity,
+                "unit": order.unit or "ກີໂລ",
                 "unit_price": float(order.unit_price),
                 "bean_order_id": order.id,
             }],
             status="pending",
             payment_method="credit",
+            shipping_address=shipping_address,
         ))
         db.commit()
     except Exception as _e:
@@ -161,6 +180,7 @@ def _out(o: BeanOrder) -> dict:
         "product_id":    o.product_id,
         "product_name":  o.product_name,
         "quantity":      o.quantity,
+        "unit":          o.unit,
         "unit_price":    o.unit_price,
         "total_price":   o.total_price,
         "status":        o.status,

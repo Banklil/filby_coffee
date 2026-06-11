@@ -27,17 +27,18 @@ class CreditAppCreate(BaseModel):
 
 
 class CreditAppOut(BaseModel):
-    id:            int
-    full_name:     str
-    phone:         str
-    id_card:       str
-    business_name: Optional[str]
-    amount:        float
-    purpose:       str
-    monthly_income:Optional[float]
-    status:        str
-    reviewer_note: Optional[str]
-    created_at:    Optional[str]
+    id:             int
+    full_name:      str
+    phone:          str
+    id_card:        str
+    business_name:  Optional[str]
+    amount:         float
+    purpose:        str
+    monthly_income: Optional[float]
+    status:         str
+    approved_limit: Optional[float]
+    reviewer_note:  Optional[str]
+    created_at:     Optional[str]
 
     class Config:
         from_attributes = True
@@ -148,6 +149,7 @@ def _out(a: CreditApplication) -> dict:
         "purpose":        a.purpose,
         "monthly_income": a.monthly_income,
         "status":         a.status,
+        "approved_limit": a.approved_limit,
         "reviewer_note":  a.reviewer_note,
         "created_at":     str(a.created_at) if a.created_at else None,
     }

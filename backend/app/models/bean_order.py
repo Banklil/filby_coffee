@@ -10,8 +10,9 @@ class BeanOrder(Base):
     owner_id     = Column(Integer, ForeignKey("shop_owners.id"), nullable=False, index=True)
     product_id   = Column(Integer, nullable=False)
     product_name = Column(String(200), nullable=False)
-    quantity     = Column(Float, nullable=False)          # kg
-    unit_price   = Column(Float, nullable=False)          # LAK per kg
+    quantity     = Column(Float, nullable=False)
+    unit         = Column(String(30), nullable=True)
+    unit_price   = Column(Float, nullable=False)
     total_price  = Column(Float, nullable=False)
     status       = Column(String(50), default="processing", nullable=False)
     delivery_date= Column(Date, nullable=True)

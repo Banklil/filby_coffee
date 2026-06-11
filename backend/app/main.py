@@ -45,6 +45,21 @@ async def lifespan(app: FastAPI):
             print(f">>> DB attempt {attempt + 1}/5 failed: {e}")
             if attempt < 4:
                 await asyncio.sleep(5)
+    # Safe column migrations for existing tables
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            for stmt in [
+                "ALTER TABLE credit_applications_merchant ADD COLUMN IF NOT EXISTS approved_limit FLOAT",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS phone VARCHAR(30)",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS address VARCHAR(500)",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS unit VARCHAR(30)",
+            ]:
+                conn.execute(text(stmt))
+            conn.commit()
+        print(">>> Column migrations applied")
+    except Exception as e:
+        print(f">>> Column migration warning: {e}")
     yield
 
 

@@ -39,6 +39,8 @@ class OwnerOut(BaseModel):
     id: int
     email: str
     shop_name: str = "ຮ້ານຂອງຂ້ອຍ"
+    phone: Optional[str] = None
+    address: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -106,6 +108,35 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=OwnerOut)
 def me(owner: ShopOwner = Depends(_get_owner)):
+    return owner
+
+
+class ProfileUpdate(BaseModel):
+    shop_name: Optional[str] = None
+    phone:     Optional[str] = None
+    address:   Optional[str] = None
+
+
+@router.patch("/profile", response_model=OwnerOut)
+def update_profile(body: ProfileUpdate, owner: ShopOwner = Depends(_get_owner), db: Session = Depends(get_db)):
+    if body.shop_name is not None:
+        owner.shop_name = body.shop_name
+    if body.phone is not None:
+        owner.phone = body.phone
+    if body.address is not None:
+        owner.address = body.address
+    # Sync to admin shops table too
+    try:
+        shop = db.query(Shop).filter(Shop.email == owner.email).first()
+        if shop:
+            if body.shop_name:
+                shop.name = body.shop_name
+            if body.phone:
+                shop.phone = body.phone
+    except Exception:
+        pass
+    db.commit()
+    db.refresh(owner)
     return owner
 
 

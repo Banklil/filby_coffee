@@ -16,6 +16,7 @@ class CreditApplication(Base):
     purpose        = Column(Text, nullable=False)
     monthly_income = Column(Float, nullable=True)
     status         = Column(String(50), default="pending", nullable=False, index=True)
+    approved_limit = Column(Float, nullable=True)
     reviewer_note  = Column(Text, nullable=True)
     reviewed_at    = Column(DateTime(timezone=True), nullable=True)
     created_at     = Column(DateTime(timezone=True), server_default=func.now())

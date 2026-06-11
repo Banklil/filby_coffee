@@ -84,11 +84,20 @@
         <div class="num" style="font-size:20px; font-weight:700; color:var(--primary);">{{ formatCurrency(selectedOrder.amount) }}</div>
       </div>
 
+      <!-- Items breakdown -->
+      <div v-if="selectedOrder.items && selectedOrder.items.length" style="margin-bottom:16px; background:var(--surface2); border-radius:10px; padding:12px;">
+        <div class="input-label" style="margin-bottom:8px;">ລາຍການ</div>
+        <div v-for="(item, i) in selectedOrder.items" :key="i" style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid var(--border);">
+          <span>{{ item.name }}</span>
+          <span class="num" style="color:var(--primary);">{{ item.qty }} {{ item.unit || 'ກີໂລ' }}</span>
+        </div>
+      </div>
+
       <div class="form-row" style="margin-bottom:16px;">
         <div><div class="input-label">ວິທີຈ່າຍ</div><div>{{ selectedOrder.payment_method }}</div></div>
         <div><div class="input-label">ວັນຄົບກຳນົດ</div><div class="num">{{ formatDate(selectedOrder.payment_due_date) }}</div></div>
         <div><div class="input-label">Tracking</div><div class="num">{{ selectedOrder.tracking_number || '-' }}</div></div>
-        <div><div class="input-label">ທີ່ຢູ່ສົ່ງ</div><div>{{ selectedOrder.shipping_address || '-' }}</div></div>
+        <div><div class="input-label">ທີ່ຢູ່ / ເບີໂທ</div><div style="font-size:12px;">{{ selectedOrder.shipping_address || '-' }}</div></div>
       </div>
 
       <div v-if="selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled'" style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">

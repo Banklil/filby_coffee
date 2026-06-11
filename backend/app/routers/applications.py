@@ -114,6 +114,7 @@ def approve_application(
             ca = db.query(CreditApplication).filter(CreditApplication.id == ca_id).first()
             if ca:
                 ca.status = "approved"
+                ca.approved_limit = data.approved_limit
                 ca.reviewed_at = datetime.now(timezone.utc)
                 db.commit()
                 # Real-time notify to merchant WebSocket room
