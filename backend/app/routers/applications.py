@@ -51,30 +51,50 @@ def approve_application(
         raise HTTPException(status_code=400, detail="ຄຳສະໝັກນີ້ໄດ້ຮັບການດຳເນີນການແລ້ວ")
 
     shop_data = app.shop_data or {}
-    # Generate shop_id
-    count = db.query(Shop).count()
-    shop_id_str = f"FB-SHOP-{count + 1:04d}"
+    is_merchant = bool(app.ref_id and app.ref_id.startswith("CA"))
 
-    shop = Shop(
-        shop_id=shop_id_str,
-        name=shop_data.get("shopName", "ບໍ່ລະບຸ"),
-        owner_name=shop_data.get("ownerName", "ບໍ່ລະບຸ"),
-        phone=shop_data.get("phone", ""),
-        email=shop_data.get("email"),
-        province=shop_data.get("province", "ບໍ່ລະບຸ"),
-        district=shop_data.get("district"),
-        village=shop_data.get("village"),
-        address_detail=shop_data.get("addressDetail"),
-        years_in_biz=shop_data.get("yearsInBiz"),
-        revenue_range=shop_data.get("revenueRange"),
-        shop_types=shop_data.get("shopTypes"),
-        staff_count=shop_data.get("staffCount"),
-        credit_limit=data.approved_limit,
-        credit_used=0,
-        status="active",
-    )
-    db.add(shop)
-    db.flush()
+    if is_merchant:
+        # Merchant app — update existing shop, don't create duplicate
+        owner_email = shop_data.get("owner_email")
+        shop = db.query(Shop).filter(Shop.email == owner_email).first() if owner_email else None
+        if shop:
+            shop.credit_limit = data.approved_limit
+            shop.status = "active"
+        else:
+            count = db.query(Shop).count()
+            shop = Shop(
+                shop_id=f"FC{count + 1:04d}",
+                name=shop_data.get("name", "ບໍ່ລະບຸ"),
+                owner_name=shop_data.get("name", "ບໍ່ລະບຸ"),
+                phone=shop_data.get("phone", "—"),
+                email=owner_email, province="ວຽງຈັນ",
+                status="active", tier="bronze",
+                credit_limit=data.approved_limit, credit_used=0,
+            )
+            db.add(shop)
+            db.flush()
+    else:
+        count = db.query(Shop).count()
+        shop_id_str = f"FB-SHOP-{count + 1:04d}"
+        shop = Shop(
+            shop_id=shop_id_str,
+            name=shop_data.get("shopName", "ບໍ່ລະບຸ"),
+            owner_name=shop_data.get("ownerName", "ບໍ່ລະບຸ"),
+            phone=shop_data.get("phone", ""),
+            email=shop_data.get("email"),
+            province=shop_data.get("province", "ບໍ່ລະບຸ"),
+            district=shop_data.get("district"),
+            village=shop_data.get("village"),
+            address_detail=shop_data.get("addressDetail"),
+            years_in_biz=shop_data.get("yearsInBiz"),
+            revenue_range=shop_data.get("revenueRange"),
+            shop_types=shop_data.get("shopTypes"),
+            staff_count=shop_data.get("staffCount"),
+            credit_limit=data.approved_limit,
+            credit_used=0, status="active",
+        )
+        db.add(shop)
+        db.flush()
 
     app.status = "approved"
     app.reviewed_by = current_user.id
@@ -85,7 +105,29 @@ def approve_application(
 
     db.add(AuditLog(admin_id=current_user.id, action="application.approve", entity_type="application", entity_id=app_id))
     db.commit()
-    return {"message": "ອະນຸມັດຄຳສະໝັກສຳເລັດ", "shop_id": shop.id, "shop_id_str": shop_id_str}
+
+    # ── Sync back to merchant credit_applications_merchant ───────────
+    if is_merchant:
+        try:
+            from ..models.credit_application import CreditApplication
+            ca_id = int(app.ref_id[2:].lstrip("0") or "0")
+            ca = db.query(CreditApplication).filter(CreditApplication.id == ca_id).first()
+            if ca:
+                ca.status = "approved"
+                ca.reviewed_at = datetime.now(timezone.utc)
+                db.commit()
+                # Real-time notify to merchant WebSocket room
+                import asyncio
+                from ..ws_manager import notify_status_changed
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(notify_status_changed(ca.id, "approved", ca.owner_id))
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[WARN] merchant credit sync approve: {e}")
+
+    return {"message": "ອະນຸມັດຄຳສະໝັກສຳເລັດ", "shop_id": shop.id, "shop_id_str": shop.shop_id}
 
 
 @router.post("/{app_id}/reject")
@@ -99,12 +141,36 @@ def reject_application(
         raise HTTPException(status_code=404, detail="ບໍ່ພົບຄຳສະໝັກ")
     if app.status != "pending":
         raise HTTPException(status_code=400, detail="ຄຳສະໝັກນີ້ໄດ້ຮັບການດຳເນີນການແລ້ວ")
+    is_merchant = bool(app.ref_id and app.ref_id.startswith("CA"))
+
     app.status = "rejected"
     app.reviewed_by = current_user.id
     app.reviewed_at = datetime.now(timezone.utc)
     app.review_notes = data.reason
     db.add(AuditLog(admin_id=current_user.id, action="application.reject", entity_type="application", entity_id=app_id))
     db.commit()
+
+    # ── Sync back to merchant credit_applications_merchant ───────────
+    if is_merchant:
+        try:
+            from ..models.credit_application import CreditApplication
+            ca_id = int(app.ref_id[2:].lstrip("0") or "0")
+            ca = db.query(CreditApplication).filter(CreditApplication.id == ca_id).first()
+            if ca:
+                ca.status = "rejected"
+                ca.reviewer_note = data.reason
+                ca.reviewed_at = datetime.now(timezone.utc)
+                db.commit()
+                import asyncio
+                from ..ws_manager import notify_status_changed
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(notify_status_changed(ca.id, "rejected", ca.owner_id))
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[WARN] merchant credit sync reject: {e}")
+
     return {"message": "ປະຕິເສດຄຳສະໝັກແລ້ວ"}
 
 
