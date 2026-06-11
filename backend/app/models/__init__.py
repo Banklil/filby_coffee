@@ -8,3 +8,5 @@ from .audit_log import AuditLog
 from .prospect import Prospect
 from .shop_owner import ShopOwner
 from .finance import FinanceEntry
+from .bean_order import BeanOrder
+from .credit_application import CreditApplication
