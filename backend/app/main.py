@@ -9,6 +9,7 @@ from .database import engine, Base
 from . import models  # ensure all models are imported before create_all
 
 from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router, prospects, shop_auth, finance
+from .routers import bean_orders, credit_apps, merchant_report, admin_stats
 
 
 def _ensure_default_admin():
@@ -57,9 +58,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_origin_regex=r"https://.*\.railway\.app",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -81,6 +81,14 @@ app.include_router(settings_router.router)
 app.include_router(prospects.router)
 app.include_router(shop_auth.router)
 app.include_router(finance.router)
+app.include_router(bean_orders.router)
+app.include_router(credit_apps.router)
+app.include_router(merchant_report.router)
+app.include_router(admin_stats.router)
+
+# ── Socket.IO real-time ──────────────────────────────────────────────
+from .ws_manager import socket_asgi
+app.mount("/socket.io", socket_asgi)
 
 
 @app.get("/")
