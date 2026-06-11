@@ -118,25 +118,31 @@ class ResetPasswordRequest(BaseModel):
 @router.post("/reset-password")
 def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Upsert shop owner with a fresh bcrypt hash — dev/support tool."""
-    if len(body.new_password) < 6:
-        raise HTTPException(status_code=400, detail="ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ຕົວ")
-    owner = db.query(ShopOwner).filter(ShopOwner.email == body.email).first()
-    if owner:
-        owner.password_hash = get_password_hash(body.new_password)
-        owner.active = True
-        if not owner.shop_name:
-            owner.shop_name = body.shop_name
-    else:
-        owner = ShopOwner(
-            email=body.email,
-            password_hash=get_password_hash(body.new_password),
-            shop_name=body.shop_name,
-            active=True,
-        )
-        db.add(owner)
-    db.commit()
-    db.refresh(owner)
-    return {"message": "ຕັ້ງລະຫັດຜ່ານໃໝ່ສຳເລັດ", "id": owner.id, "email": owner.email}
+    try:
+        if len(body.new_password) < 6:
+            raise HTTPException(status_code=400, detail="ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ຕົວ")
+        owner = db.query(ShopOwner).filter(ShopOwner.email == body.email).first()
+        if owner:
+            owner.password_hash = get_password_hash(body.new_password)
+            owner.active = True
+            if not owner.shop_name:
+                owner.shop_name = body.shop_name
+        else:
+            owner = ShopOwner(
+                email=body.email,
+                password_hash=get_password_hash(body.new_password),
+                shop_name=body.shop_name,
+                active=True,
+            )
+            db.add(owner)
+        db.commit()
+        db.refresh(owner)
+        return {"message": "ຕັ້ງລະຫັດຜ່ານໃໝ່ສຳເລັດ", "id": owner.id, "email": owner.email}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[RESET ERROR] {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
 
 
 # ---- Products (shared catalog managed by admin web) ----
