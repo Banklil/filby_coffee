@@ -86,14 +86,9 @@ async def create_bean_order(
         note             = body.note,
         status           = initial_status,
     )
-    # Store extra fields if columns exist (added via migration)
-    try:
-        order.payment_method   = body.payment_method
-        order.phone            = body.phone
-        order.delivery_address = body.delivery_address
-    except Exception:
-        pass
-    # Save phone/address to owner profile if provided and not yet set
+    order.payment_method   = body.payment_method
+    order.phone            = body.phone
+    order.delivery_address = body.delivery_address
     if body.phone and not owner.phone:
         owner.phone = body.phone
     if body.delivery_address and not owner.address:
