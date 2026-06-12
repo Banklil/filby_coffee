@@ -148,12 +148,15 @@ async def create_bean_order(
     try:
         from ..ws_manager import notify_new_bean_order
         await notify_new_bean_order({
-            "id":           order.id,
-            "shop_name":    owner.shop_name,
-            "product_name": order.product_name,
-            "quantity":     order.quantity,
-            "total_price":  order.total_price,
-            "created_at":   str(order.created_at),
+            "id":             order.id,
+            "shop_name":      owner.shop_name or owner.email,
+            "product_name":   order.product_name,
+            "quantity":       order.quantity,
+            "unit":           order.unit or "kg",
+            "total_price":    order.total_price,
+            "payment_method": order.payment_method,
+            "status":         order.status,
+            "created_at":     str(order.created_at),
         })
     except Exception:
         pass
