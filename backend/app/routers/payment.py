@@ -45,7 +45,10 @@ def get_qr(request: Request):
     """Returns the current company QR code URL (public)."""
     fname = _qr_filename()
     if fname:
-        base = str(request.base_url).rstrip("/")
+        # Honour X-Forwarded-Proto so Railway HTTPS proxy returns https:// URLs
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host  = request.headers.get("x-forwarded-host", request.url.netloc)
+        base  = f"{proto}://{host}"
         return {"url": f"{base}/uploads/{fname}", "exists": True}
     return {"url": None, "exists": False}
 
@@ -116,7 +119,7 @@ def get_pending(
         owner = db.query(ShopOwner).filter(ShopOwner.id == o.owner_id).first()
         result.append({
             "id":           o.id,
-            "owner_name":   (owner.name      if owner else "—"),
+            "owner_name":   (owner.shop_name or owner.email if owner else "—"),
             "shop_name":    (owner.shop_name if owner else "—"),
             "phone":        (owner.phone     if owner else "—"),
             "product_name": o.product_name,
