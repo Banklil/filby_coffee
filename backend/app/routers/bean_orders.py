@@ -124,6 +124,8 @@ async def create_bean_order(
             addr_parts.append(body.delivery_address or owner.address)
         shipping_address = " | ".join(addr_parts) or None
 
+        # QR orders start as "pending" (await payment confirm), cash/others go "confirmed"
+        mirror_status = "pending" if order.payment_method == "qr" else "confirmed"
         db.add(Order(
             order_id=f"BO{order.id:06d}",
             shop_id=shop.id,
@@ -135,8 +137,8 @@ async def create_bean_order(
                 "unit_price": float(order.unit_price),
                 "bean_order_id": order.id,
             }],
-            status="pending",
-            payment_method="credit",
+            status=mirror_status,
+            payment_method=order.payment_method or "cash",
             shipping_address=shipping_address,
         ))
         db.commit()

@@ -15,6 +15,7 @@ from ..core.deps import get_current_user
 from ..models.admin import Admin
 from ..models.bean_order import BeanOrder
 from ..models.shop_owner import ShopOwner
+from ..models.order import Order
 from ..config import settings
 
 router = APIRouter(prefix="/api/payment", tags=["payment"])
@@ -138,22 +139,28 @@ def confirm_payment(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    """Admin: confirm QR payment received → move to processing."""
+    """Admin: confirm QR payment received → BeanOrder → processing, mirror Order → confirmed."""
     order = db.query(BeanOrder).filter(BeanOrder.id == order_id).first()
     if not order:
         raise HTTPException(404, "ບໍ່ພົບ order")
     if order.status != "pending_payment":
         raise HTTPException(400, f"Order ສະຖານະ '{order.status}' ບໍ່ສາມາດຢືນຢັນໄດ້")
+
     order.status = "processing"
+
+    # Update the mirrored admin orders record so it appears as "confirmed" in orders list
+    mirror_id = f"BO{order_id:06d}"
+    mirror = db.query(Order).filter(Order.order_id == mirror_id).first()
+    if mirror and mirror.status == "pending":
+        mirror.status = "confirmed"
+        mirror.payment_method = "qr"
+
     db.commit()
 
-    # Broadcast to admin sockets
     try:
         import asyncio
         from ..ws_manager import sio
-        asyncio.create_task(
-            sio.emit("payment_confirmed", {"order_id": order_id})
-        )
+        asyncio.create_task(sio.emit("payment_confirmed", {"order_id": order_id}))
     except Exception:
         pass
 
@@ -166,10 +173,17 @@ def reject_payment(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    """Admin: reject / cancel a pending payment."""
+    """Admin: reject / cancel a pending payment → BeanOrder & mirror Order → cancelled."""
     order = db.query(BeanOrder).filter(BeanOrder.id == order_id).first()
     if not order:
         raise HTTPException(404, "ບໍ່ພົບ order")
+
     order.status = "cancelled"
+
+    mirror_id = f"BO{order_id:06d}"
+    mirror = db.query(Order).filter(Order.order_id == mirror_id).first()
+    if mirror:
+        mirror.status = "cancelled"
+
     db.commit()
     return {"message": "ຍົກເລີກ order ແລ້ວ", "order_id": order_id}
