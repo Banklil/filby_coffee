@@ -62,7 +62,7 @@
 
 <script setup>
 import { RouterLink, useRouter } from 'vue-router'
-import { Coffee, LayoutDashboard, Store, FileText, ShoppingBag, CreditCard, Package, BarChart2, FileBarChart, Settings, LogOut, ClipboardList, Wallet } from 'lucide-vue-next'
+import { Coffee, LayoutDashboard, Store, FileText, ShoppingBag, CreditCard, Package, BarChart2, FileBarChart, Settings, LogOut, ClipboardList, Wallet, QrCode } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth.js'
 
 const authStore = useAuthStore()
@@ -95,6 +95,7 @@ const navGroups = [
     label: 'ການເງິນ',
     items: [
       { to: '/finance', label: 'ການເງິນບໍລິສັດ', icon: Wallet },
+      { to: '/payment', label: 'ການຊຳລະ QR', icon: QrCode },
     ],
   },
   {

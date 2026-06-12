@@ -10,7 +10,7 @@ from .database import engine, Base
 from . import models  # ensure all models are imported before create_all
 
 from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router, prospects, shop_auth, finance
-from .routers import bean_orders, credit_apps, merchant_report, admin_stats
+from .routers import bean_orders, credit_apps, merchant_report, admin_stats, payment
 
 
 def _ensure_default_admin():
@@ -54,6 +54,9 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS phone VARCHAR(30)",
                 "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS address VARCHAR(500)",
                 "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS unit VARCHAR(30)",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS phone VARCHAR(50)",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS delivery_address VARCHAR(500)",
             ]:
                 conn.execute(text(stmt))
             conn.commit()
@@ -112,6 +115,7 @@ app.include_router(bean_orders.router)
 app.include_router(credit_apps.router)
 app.include_router(merchant_report.router)
 app.include_router(admin_stats.router)
+app.include_router(payment.router)
 
 # ── Socket.IO real-time (optional — skipped if package missing) ──────
 try:

@@ -20,6 +20,7 @@ const routes = [
       { path: 'settings', component: () => import('@/views/settings/Settings.vue') },
       { path: 'prospects', component: () => import('@/views/prospects/Prospects.vue') },
       { path: 'finance', component: () => import('@/views/finance/Finance.vue') },
+      { path: 'payment', component: () => import('@/views/payment/Payment.vue') },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },

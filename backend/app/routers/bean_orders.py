@@ -28,6 +28,7 @@ class BeanOrderCreate(BaseModel):
     note:             Optional[str]  = None
     delivery_address: Optional[str]  = None
     phone:            Optional[str]  = None
+    payment_method:   Optional[str]  = None  # "qr" | "cash"
 
 
 class BeanOrderOut(BaseModel):
@@ -70,18 +71,28 @@ async def create_bean_order(
     db:    Session   = Depends(get_db),
     owner: ShopOwner = Depends(_get_owner),
 ):
+    # QR payments wait for admin confirmation; cash goes straight to processing
+    initial_status = "pending_payment" if body.payment_method == "qr" else "processing"
+
     order = BeanOrder(
-        owner_id      = owner.id,
-        product_id    = body.product_id,
-        product_name  = body.product_name,
-        quantity      = body.quantity,
-        unit          = body.unit,
-        unit_price    = body.unit_price,
-        total_price   = body.total_price,
-        delivery_date = body.delivery_date,
-        note          = body.note,
-        status        = "processing",
+        owner_id         = owner.id,
+        product_id       = body.product_id,
+        product_name     = body.product_name,
+        quantity         = body.quantity,
+        unit             = body.unit,
+        unit_price       = body.unit_price,
+        total_price      = body.total_price,
+        delivery_date    = body.delivery_date,
+        note             = body.note,
+        status           = initial_status,
     )
+    # Store extra fields if columns exist (added via migration)
+    try:
+        order.payment_method   = body.payment_method
+        order.phone            = body.phone
+        order.delivery_address = body.delivery_address
+    except Exception:
+        pass
     # Save phone/address to owner profile if provided and not yet set
     if body.phone and not owner.phone:
         owner.phone = body.phone
