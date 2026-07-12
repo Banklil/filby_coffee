@@ -1,7 +1,8 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 import os
 
 from .config import settings
@@ -9,6 +10,7 @@ from .database import engine, Base
 from . import models  # ensure all models are imported before create_all
 
 from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router, prospects, shop_auth, finance
+from .routers import bean_orders, credit_apps, merchant_report, admin_stats, payment
 
 
 def _ensure_default_admin():
@@ -43,6 +45,24 @@ async def lifespan(app: FastAPI):
             print(f">>> DB attempt {attempt + 1}/5 failed: {e}")
             if attempt < 4:
                 await asyncio.sleep(5)
+    # Safe column migrations for existing tables
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            for stmt in [
+                "ALTER TABLE credit_applications_merchant ADD COLUMN IF NOT EXISTS approved_limit FLOAT",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS phone VARCHAR(30)",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS address VARCHAR(500)",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS unit VARCHAR(30)",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS phone VARCHAR(50)",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS delivery_address VARCHAR(500)",
+            ]:
+                conn.execute(text(stmt))
+            conn.commit()
+        print(">>> Column migrations applied")
+    except Exception as e:
+        print(f">>> Column migration warning: {e}")
     yield
 
 
@@ -57,12 +77,22 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_origin_regex=r"https://.*\.railway\.app",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def _catch_all(request: Request, exc: Exception):
+    import traceback
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"{type(exc).__name__}: {exc}"},
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
 
 # Static files for uploads
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -81,6 +111,19 @@ app.include_router(settings_router.router)
 app.include_router(prospects.router)
 app.include_router(shop_auth.router)
 app.include_router(finance.router)
+app.include_router(bean_orders.router)
+app.include_router(credit_apps.router)
+app.include_router(merchant_report.router)
+app.include_router(admin_stats.router)
+app.include_router(payment.router)
+
+# ── Socket.IO real-time (optional — skipped if package missing) ──────
+try:
+    from .ws_manager import socket_asgi
+    app.mount("/socket.io", socket_asgi)
+    print(">>> Socket.IO mounted at /socket.io")
+except Exception as _ws_err:
+    print(f">>> Socket.IO skipped: {_ws_err}")
 
 
 @app.get("/")
