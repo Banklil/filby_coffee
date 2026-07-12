@@ -52,11 +52,11 @@
         </div>
         <div style="flex:1;"></div>
         <!-- Month / Year -->
-        <select v-model="filterMonth" @change="loadEntries()" class="input" style="width:120px; font-size:13px; padding:6px 10px;">
+        <select v-model="filterMonth" @change="onFilterChange()" class="input" style="width:120px; font-size:13px; padding:6px 10px;">
           <option value="">ທຸກເດືອນ</option>
           <option v-for="m in 12" :key="m" :value="m">{{ monthLabel(m) }}</option>
         </select>
-        <select v-model="filterYear" @change="loadEntries()" class="input" style="width:100px; font-size:13px; padding:6px 10px;">
+        <select v-model="filterYear" @change="onFilterChange()" class="input" style="width:100px; font-size:13px; padding:6px 10px;">
           <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
         </select>
       </div>
@@ -242,7 +242,7 @@ function typeBadge(t) {
   return { income: 'badge-success', expense: 'badge-danger', capital: 'badge-info' }[t] || 'badge-muted'
 }
 function monthLabel(m) {
-  return ['', 'ມ.ກ', 'ກ.ພ', 'ມີ.ນ', 'ເມ.ສ', 'ພ.ພ', 'ມິ.ຖ', 'ກ.ລ', 'ສ.ຫ', 'ກ.ຍ', 'ຕ.ລ', 'ພ.ຈ', 'ທ.ວ'][m]
+  return ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m]
 }
 function formatDate(d) {
   if (!d) return '—'
@@ -272,6 +272,10 @@ async function loadEntries() {
   } finally {
     loading.value = false
   }
+}
+
+async function onFilterChange() {
+  await Promise.all([loadData(), loadEntries()])
 }
 
 onMounted(async () => {
