@@ -1,9 +1,9 @@
 <template>
-  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background: radial-gradient(ellipse at 20% 50%, rgba(27,41,81,0.6) 0%, transparent 60%), var(--bg-deep); padding:20px;">
+  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background: radial-gradient(ellipse at 20% 50%, rgba(201,160,71,0.20) 0%, transparent 60%), var(--bg-deep); padding:20px;">
     <div style="width:100%; max-width:400px;">
       <!-- Logo -->
       <div style="text-align:center; margin-bottom:40px;">
-        <div style="width:110px; height:110px; border-radius:50%; background:#fff; padding:8px; margin:0 auto 16px; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+        <div style="width:110px; height:110px; border-radius:50%; background:#fff; padding:8px; margin:0 auto 16px; box-shadow:0 4px 20px rgba(42,32,21,0.18);">
           <img src="/logo.png" alt="Filby Coffee" style="width:100%; height:100%; object-fit:contain; border-radius:50%;"
             onerror="this.closest('div').style.background='linear-gradient(135deg,var(--primary),var(--primary-deep))'; this.style.display='none'; this.nextElementSibling.style.display='flex'" />
           <Coffee style="display:none; width:100%; height:100%; align-items:center; justify-content:center;" :size="44" color="#fff" />

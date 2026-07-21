@@ -3,23 +3,24 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0A0F1E;
-  --bg-deep: #060A14;
-  --surface: #111827;
-  --surface-2: #1A2438;
-  --surface-3: #1E2D47;
-  --border: rgba(180, 210, 255, 0.07);
-  --border-strong: rgba(180, 210, 255, 0.14);
+  --bg: #F6F0E2;
+  --bg-deep: #ECE0C4;
+  --surface: #FFFFFF;
+  --surface-2: #F1E8D3;
+  --surface-3: #E6D8B8;
+  --border: rgba(46, 34, 20, 0.10);
+  --border-strong: rgba(46, 34, 20, 0.20);
   --primary: #C9A047;
   --primary-soft: #D4B05A;
   --primary-deep: #A07D30;
-  --cream: #E8F0FF;
-  --text: #F0F4FF;
-  --text-secondary: rgba(240, 244, 255, 0.66);
-  --text-muted: rgba(240, 244, 255, 0.38);
-  --success: #6EE7A7;
-  --danger: #F87171;
-  --warning: #FBBF24;
+  --ink: #2A2015;
+  --cream: var(--ink);
+  --text: var(--ink);
+  --text-secondary: rgba(42, 32, 21, 0.68);
+  --text-muted: rgba(42, 32, 21, 0.44);
+  --success: #2E7D4F;
+  --danger: #B23A2A;
+  --warning: #9C6B0A;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Lao', sans-serif; }
@@ -38,6 +39,11 @@ html, body, #app {
 input, select, textarea, button, optgroup {
   font-family: 'Noto Sans Lao', sans-serif;
   font-size: inherit;
+}
+
+/* Serif headings (Noto Serif Lao covers both Lao and Latin glyphs) */
+h1, h2, h3 {
+  font-family: 'Noto Serif Lao', 'Noto Sans Lao', serif;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -85,8 +91,8 @@ input, select, textarea, button, optgroup {
   white-space: nowrap;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: var(--primary); color: var(--bg); }
-.btn-primary:hover:not(:disabled) { background: var(--primary-soft); }
+.btn-primary { background: var(--ink); color: #FBF5E6; }
+.btn-primary:hover:not(:disabled) { background: #3D2E1E; }
 .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-strong); }
 .btn-ghost:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
 .btn-danger { background: rgba(248, 113, 113, 0.15); color: var(--danger); border: 1px solid rgba(248, 113, 113, 0.3); }
