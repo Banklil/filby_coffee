@@ -41,7 +41,7 @@
           <span style="font-size:14px; font-weight:600; color:var(--text);">ລາຍຮັບ & ສິນເຊື່ອ & ກຳໄລ/ຂາດທຶນ</span>
           <span style="font-size:11px; color:var(--text-muted);">12 ເດືອນຜ່ານມາ</span>
         </div>
-        <div style="display:flex; gap:14px; font-size:11px; color:rgba(255,250,243,0.65);">
+        <div style="display:flex; gap:14px; font-size:11px; color:rgba(42,32,21,0.65);">
           <span><span style="display:inline-block;width:10px;height:10px;background:#6EE7A7;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>ລາຍຮັບ</span>
           <span><span style="display:inline-block;width:10px;height:10px;background:#E8854A;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>ສິນເຊື່ອອອກ</span>
           <span><span style="display:inline-block;width:18px;height:2px;background:#FACC15;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>ກຳໄລ/ຂາດທຶນ</span>

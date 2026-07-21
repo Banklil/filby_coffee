@@ -51,14 +51,8 @@
           </button>
         </div>
         <div style="flex:1;"></div>
-        <!-- Month / Year -->
-        <select v-model="filterMonth" @change="onFilterChange()" class="input" style="width:120px; font-size:13px; padding:6px 10px;">
-          <option value="">ທຸກເດືອນ</option>
-          <option v-for="m in 12" :key="m" :value="m">{{ monthLabel(m) }}</option>
-        </select>
-        <select v-model="filterYear" @change="onFilterChange()" class="input" style="width:100px; font-size:13px; padding:6px 10px;">
-          <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
-        </select>
+        <!-- Date range -->
+        <DateRangePicker v-model="dateRange" @confirm="onFilterChange" />
       </div>
     </div>
 
@@ -198,6 +192,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import { financeApi } from '@/api/index.js'
 import { formatNumber, formatCompact } from '@/utils/format.js'
 import { useToastStore } from '@/stores/toast.js'
+import DateRangePicker from '@/components/ui/DateRangePicker.vue'
 
 const toast = useToastStore()
 
@@ -210,8 +205,14 @@ const editing = ref(null)
 const categories = ref({})
 
 const filterType = ref('')
-const filterMonth = ref(new Date().getMonth() + 1)
-const filterYear = ref(new Date().getFullYear())
+
+function currentMonthRange() {
+  const d = new Date()
+  const start = new Date(d.getFullYear(), d.getMonth(), 1)
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) }
+}
+const dateRange = ref(currentMonthRange())
 
 const typeOptions = [
   { value: '', label: 'ທັງໝົດ' },
@@ -219,11 +220,6 @@ const typeOptions = [
   { value: 'income', label: 'ລາຍຮັບ' },
   { value: 'expense', label: 'ລາຍຈ່າຍ' },
 ]
-
-const yearOptions = computed(() => {
-  const y = new Date().getFullYear()
-  return [y - 1, y, y + 1]
-})
 
 const pageIncome = computed(() => entries.value.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0))
 const pageExpense = computed(() => entries.value.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0))
@@ -241,9 +237,6 @@ function typeLabel(t) {
 function typeBadge(t) {
   return { income: 'badge-success', expense: 'badge-danger', capital: 'badge-info' }[t] || 'badge-muted'
 }
-function monthLabel(m) {
-  return ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m]
-}
 function formatDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('lo-LA', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -251,7 +244,7 @@ function formatDate(d) {
 
 async function loadData() {
   const [sumRes, catRes] = await Promise.all([
-    financeApi.summary({ year: filterYear.value, month: filterMonth.value }),
+    financeApi.summary({ date_from: dateRange.value.start, date_to: dateRange.value.end }),
     financeApi.categories(),
   ])
   summary.value = sumRes.data
@@ -263,8 +256,8 @@ async function loadEntries() {
   try {
     const params = { limit: 100 }
     if (filterType.value) params.type = filterType.value
-    if (filterMonth.value) params.month = filterMonth.value
-    if (filterYear.value) params.year = filterYear.value
+    if (dateRange.value.start) params.date_from = dateRange.value.start
+    if (dateRange.value.end) params.date_to = dateRange.value.end
     const res = await financeApi.list(params)
     entries.value = res.data.items
   } catch (e) {

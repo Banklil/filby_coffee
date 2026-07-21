@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timedelta, timezone
 from typing import Optional
 from pydantic import BaseModel
 from ..database import get_db
@@ -78,14 +78,20 @@ def get_categories():
 def get_summary(
     year: Optional[int] = None,
     month: Optional[int] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
     now = datetime.now(timezone.utc)
-    y = year or now.year
-    m = month or now.month
-    month_start = date(y, m, 1)
-    month_end = date(y + 1, 1, 1) if m == 12 else date(y, m + 1, 1)
+    if date_from and date_to:
+        month_start = date_from
+        month_end = date_to + timedelta(days=1)
+    else:
+        y = year or now.year
+        m = month or now.month
+        month_start = date(y, m, 1)
+        month_end = date(y + 1, 1, 1) if m == 12 else date(y, m + 1, 1)
 
     total_capital = db.query(func.sum(FinanceEntry.amount)).filter(
         FinanceEntry.type == "capital"
@@ -156,6 +162,8 @@ def list_entries(
     type: Optional[str] = None,
     year: Optional[int] = None,
     month: Optional[int] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -164,10 +172,13 @@ def list_entries(
     q = db.query(FinanceEntry)
     if type:
         q = q.filter(FinanceEntry.type == type)
-    if year:
-        q = q.filter(extract("year", FinanceEntry.entry_date) == year)
-    if month:
-        q = q.filter(extract("month", FinanceEntry.entry_date) == month)
+    if date_from and date_to:
+        q = q.filter(FinanceEntry.entry_date >= date_from, FinanceEntry.entry_date <= date_to)
+    else:
+        if year:
+            q = q.filter(extract("year", FinanceEntry.entry_date) == year)
+        if month:
+            q = q.filter(extract("month", FinanceEntry.entry_date) == month)
 
     total = q.count()
     items = (

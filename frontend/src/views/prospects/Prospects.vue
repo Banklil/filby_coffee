@@ -305,10 +305,10 @@ function renderCharts() {
     pieChart.setOption({
       backgroundColor: 'transparent',
       textStyle: { fontFamily: 'Noto Sans Lao, sans-serif' },
-      tooltip: { trigger: 'item', backgroundColor: '#0F1828', borderColor: 'rgba(180,210,255,0.14)', textStyle: { color: '#F0F4FF', fontSize: 12 } },
+      tooltip: { trigger: 'item', backgroundColor: '#FFFFFF', borderColor: 'rgba(46,34,20,0.16)', textStyle: { color: '#2A2015', fontSize: 12 } },
       series: [{
         type: 'pie', radius: ['40%', '70%'], center: ['50%', '50%'],
-        label: { color: 'rgba(240,244,255,0.7)', fontSize: 11, fontFamily: 'Noto Sans Lao, sans-serif' },
+        label: { color: 'rgba(42,32,21,0.75)', fontSize: 11, fontFamily: 'Noto Sans Lao, sans-serif' },
         data: [
           { value: stats.value.interested, name: 'ສົນໃຈ', itemStyle: { color: '#6EE7A7' } },
           { value: stats.value.not_interested, name: 'ບໍ່ສົນໃຈ', itemStyle: { color: '#F87171' } },
@@ -325,9 +325,9 @@ function renderCharts() {
       backgroundColor: 'transparent',
       textStyle: { fontFamily: 'Noto Sans Lao, sans-serif' },
       grid: { top: 10, right: 16, bottom: 32, left: 80 },
-      tooltip: { trigger: 'axis', backgroundColor: '#0F1828', borderColor: 'rgba(180,210,255,0.14)', textStyle: { color: '#F0F4FF', fontSize: 12 } },
-      xAxis: { type: 'value', axisLabel: { color: 'rgba(240,244,255,0.4)', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(180,210,255,0.05)' } }, axisLine: { show: false } },
-      yAxis: { type: 'category', data: provs.map(p => p.province), axisLabel: { color: 'rgba(240,244,255,0.6)', fontSize: 11 }, axisLine: { lineStyle: { color: 'rgba(180,210,255,0.08)' } }, splitLine: { show: false } },
+      tooltip: { trigger: 'axis', backgroundColor: '#FFFFFF', borderColor: 'rgba(46,34,20,0.16)', textStyle: { color: '#2A2015', fontSize: 12 } },
+      xAxis: { type: 'value', axisLabel: { color: 'rgba(42,32,21,0.55)', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(46,34,20,0.08)' } }, axisLine: { show: false } },
+      yAxis: { type: 'category', data: provs.map(p => p.province), axisLabel: { color: 'rgba(42,32,21,0.68)', fontSize: 11 }, axisLine: { lineStyle: { color: 'rgba(46,34,20,0.14)' } }, splitLine: { show: false } },
       series: [
         { name: 'ສົນໃຈ', type: 'bar', stack: 'a', data: provs.map(p => p.interested), itemStyle: { color: '#6EE7A7', borderRadius: [0, 0, 0, 0] }, barMaxWidth: 20 },
         { name: 'ບໍ່ສົນໃຈ', type: 'bar', stack: 'a', data: provs.map(p => p.not_interested), itemStyle: { color: '#F87171' }, barMaxWidth: 20 },
