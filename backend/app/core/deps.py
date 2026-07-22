@@ -19,7 +19,11 @@ def get_current_user(
     admin_id = payload.get("sub")
     if not admin_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="ໂທເຄັນບໍ່ຖືກຕ້ອງ")
-    admin = db.query(Admin).filter(Admin.id == int(admin_id), Admin.active == True).first()
+    try:
+        admin_id = int(admin_id)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="ໂທເຄັນບໍ່ຖືກຕ້ອງ")
+    admin = db.query(Admin).filter(Admin.id == admin_id, Admin.active == True).first()
     if not admin:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="ບໍ່ພົບຜູ້ໃຊ້")
     return admin

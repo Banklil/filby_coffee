@@ -24,7 +24,9 @@ client.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token')
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${baseURL}api/auth/refresh`, { refresh_token: refreshToken })
+          // Bare axios (no interceptors → no refresh recursion), but let axios
+          // join the path to baseURL so a baseURL without a trailing slash works.
+          const { data } = await axios.post('/api/auth/refresh', { refresh_token: refreshToken }, { baseURL })
           localStorage.setItem('access_token', data.access_token)
           original.headers.Authorization = `Bearer ${data.access_token}`
           return client(original)

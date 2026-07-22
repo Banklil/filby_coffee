@@ -106,12 +106,12 @@
         </table>
       </div>
 
-      <!-- Totals row -->
+      <!-- Totals row (server-computed over the whole date range, not just this page) -->
       <div v-if="entries.length" style="display:flex; justify-content:flex-end; gap:24px; padding:12px 16px; border-top:1px solid var(--border); font-size:13px;">
-        <span style="color:var(--success);">ລາຍຮັບ: +{{ formatNumber(pageIncome) }}</span>
-        <span style="color:var(--danger);">ລາຍຈ່າຍ: -{{ formatNumber(pageExpense) }}</span>
-        <span :style="`font-weight:700; color:${pageNet >= 0 ? 'var(--success)' : 'var(--danger)'}`">
-          ສຸດທິ: {{ pageNet >= 0 ? '+' : '' }}{{ formatNumber(pageNet) }}
+        <span style="color:var(--success);">ລາຍຮັບ: +{{ formatNumber(rangeIncome) }}</span>
+        <span style="color:var(--danger);">ລາຍຈ່າຍ: -{{ formatNumber(rangeExpense) }}</span>
+        <span :style="`font-weight:700; color:${rangeNet >= 0 ? 'var(--success)' : 'var(--danger)'}`">
+          ສຸດທິ: {{ rangeNet >= 0 ? '+' : '' }}{{ formatNumber(rangeNet) }}
         </span>
       </div>
     </div>
@@ -221,9 +221,11 @@ const typeOptions = [
   { value: 'expense', label: 'ລາຍຈ່າຍ' },
 ]
 
-const pageIncome = computed(() => entries.value.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0))
-const pageExpense = computed(() => entries.value.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0))
-const pageNet = computed(() => pageIncome.value - pageExpense.value)
+// Totals for the selected range come from the backend summary so they cover
+// every entry, not just the (max 100) rows currently loaded in the table.
+const rangeIncome = computed(() => summary.value?.month_income || 0)
+const rangeExpense = computed(() => summary.value?.month_expense || 0)
+const rangeNet = computed(() => summary.value?.month_net || 0)
 
 const form = ref({ type: 'income', category: '', customCategory: '', amount: 0, entry_date: today(), reference: '', description: '' })
 

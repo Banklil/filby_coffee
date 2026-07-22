@@ -75,9 +75,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS: lock to the configured frontend origin(s) when FRONTEND_URL is set;
+# otherwise stay permissive so same-origin / mobile / tunnel access keeps working.
+_cors_origins = ["*"] if not settings.FRONTEND_URL else settings.cors_origins_list
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,10 +90,12 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def _catch_all(request: Request, exc: Exception):
     import traceback
+    # Full detail stays in the server logs; the client gets a generic message
+    # so internal exception types / stack info are never exposed.
     traceback.print_exc()
     return JSONResponse(
         status_code=500,
-        content={"detail": f"{type(exc).__name__}: {exc}"},
+        content={"detail": "ເກີດຂໍ້ຜິດພາດພາຍໃນລະບົບ"},
         headers={"Access-Control-Allow-Origin": "*"},
     )
 

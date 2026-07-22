@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from datetime import datetime, date, timedelta, timezone
+from datetime import date, timedelta
 from typing import Optional
 from pydantic import BaseModel
 from ..database import get_db
 from ..core.deps import get_current_user
+from ..core.timeutil import lao_now
 from ..models.admin import Admin
 from ..models.finance import FinanceEntry
 
@@ -83,7 +84,7 @@ def get_summary(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    now = datetime.now(timezone.utc)
+    now = lao_now()
     if date_from and date_to:
         month_start = date_from
         month_end = date_to + timedelta(days=1)
@@ -117,7 +118,33 @@ def get_summary(
         FinanceEntry.entry_date < month_end,
     ).scalar() or 0
 
-    # Monthly breakdown for chart (last 12 months)
+    # Monthly breakdown for chart (last 12 months) — single grouped query
+    # instead of 24 separate ones. entry_date is a plain date, so no tz work.
+    window_year = now.year
+    window_month = now.month - 11
+    while window_month <= 0:
+        window_month += 12
+        window_year -= 1
+    window_start = date(window_year, window_month, 1)
+
+    grouped = (
+        db.query(
+            extract("year", FinanceEntry.entry_date).label("y"),
+            extract("month", FinanceEntry.entry_date).label("m"),
+            FinanceEntry.type,
+            func.sum(FinanceEntry.amount).label("total"),
+        )
+        .filter(
+            FinanceEntry.type.in_(["income", "expense"]),
+            FinanceEntry.entry_date >= window_start,
+        )
+        .group_by("y", "m", FinanceEntry.type)
+        .all()
+    )
+    bucket = {}
+    for yy, mm, ttype, total in grouped:
+        bucket.setdefault((int(yy), int(mm)), {})[ttype] = int(total or 0)
+
     monthly = []
     for i in range(11, -1, -1):
         mi = now.month - i
@@ -125,24 +152,15 @@ def get_summary(
         while mi <= 0:
             mi += 12
             yi -= 1
-        ms = date(yi, mi, 1)
-        me = date(yi + 1, 1, 1) if mi == 12 else date(yi, mi + 1, 1)
-        inc = db.query(func.sum(FinanceEntry.amount)).filter(
-            FinanceEntry.type == "income",
-            FinanceEntry.entry_date >= ms,
-            FinanceEntry.entry_date < me,
-        ).scalar() or 0
-        exp = db.query(func.sum(FinanceEntry.amount)).filter(
-            FinanceEntry.type == "expense",
-            FinanceEntry.entry_date >= ms,
-            FinanceEntry.entry_date < me,
-        ).scalar() or 0
+        vals = bucket.get((yi, mi), {})
+        inc = vals.get("income", 0)
+        exp = vals.get("expense", 0)
         monthly.append({
             "month": f"{yi}-{mi:02d}",
             "label": f"{mi:02d}/{yi}",
-            "income": int(inc),
-            "expense": int(exp),
-            "net": int(inc) - int(exp),
+            "income": inc,
+            "expense": exp,
+            "net": inc - exp,
         })
 
     return {
