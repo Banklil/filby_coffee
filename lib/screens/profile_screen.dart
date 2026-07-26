@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
+import '../services/auth_service.dart';
+import 'shop_info_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = AuthService.currentUser;
+    final shopName = user?.shopName ?? 'ຮ້ານຂອງຂ້ອຍ';
+    final email = user?.email ?? '';
+    final initial = shopName.isNotEmpty ? shopName[0].toUpperCase() : 'F';
     return Scaffold(
       backgroundColor: FilbyColors.bg,
       body: SafeArea(
@@ -46,7 +52,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        'ລ',
+                        initial,
                         style: GoogleFonts.notoSerifLao(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -61,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ຮ້ານ ລຳຄາ ກາເຟ',
+                          shopName,
                           style: GoogleFonts.notoSerifLao(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -69,21 +75,9 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'ສະມາຊິກຕັ້ງແຕ່ 2025',
-                          style: TextStyle(fontSize: 11, color: FilbyColors.textSecondary),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: FilbyColors.warningBg,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Text(
-                            '★ ລູກຄ້າໂດດ',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: FilbyColors.primary),
-                          ),
+                        Text(
+                          email,
+                          style: const TextStyle(fontSize: 11, color: FilbyColors.textSecondary),
                         ),
                       ],
                     ),
@@ -115,28 +109,10 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    '3,150,000',
+                    '—',
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: FilbyColors.bg, letterSpacing: -0.5),
                   ),
-                  const Text('ກີບ', style: TextStyle(fontSize: 12, color: Color(0x8C140A05))),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: const LinearProgressIndicator(
-                      value: 1850000 / 5000000,
-                      backgroundColor: Color(0x1A140A05),
-                      valueColor: AlwaysStoppedAnimation(FilbyColors.primaryDeep),
-                      minHeight: 4,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('ໃຊ້ໄປ: 1,850,000', style: TextStyle(fontSize: 10, color: Color(0x8C140A05))),
-                      Text('ສູງສຸດ: 5,000,000', style: TextStyle(fontSize: 10, color: Color(0x8C140A05))),
-                    ],
-                  ),
+                  const Text('ກີບ · ຕິດຕໍ່ admin ເພື່ອເປີດສິນເຊື່ອ', style: TextStyle(fontSize: 11, color: Color(0x8C140A05))),
                 ],
               ),
             ),
@@ -145,7 +121,7 @@ class ProfileScreen extends StatelessWidget {
             const _MenuGroup(
               items: [
                 _MenuRowData(icon: Icons.store_outlined, label: 'ຂໍ້ມູນຮ້ານ'),
-                _MenuRowData(icon: Icons.credit_card_outlined, label: 'ວິທີຊຳລະ', value: '···· 4218'),
+                _MenuRowData(icon: Icons.credit_card_outlined, label: 'ວິທີຊຳລະ'),
                 _MenuRowData(icon: Icons.notifications_outlined, label: 'ການເຕືອນ'),
                 _MenuRowData(icon: Icons.language_outlined, label: 'ພາສາ', value: 'ລາວ'),
               ],
@@ -222,7 +198,19 @@ class _MenuRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () async {
+        if (data.label == 'ຂໍ້ມູນຮ້ານ') {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopInfoScreen()));
+          return;
+        }
+        if (data.isDestructive) {
+          await AuthService.signOut();
+          if (context.mounted) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            Navigator.of(context).pushReplacementNamed('/login');
+          }
+        }
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         child: Row(

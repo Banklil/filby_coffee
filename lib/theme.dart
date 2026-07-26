@@ -2,24 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FilbyColors {
-  static const bg = Color(0xFF0E0703);
-  static const bgDeep = Color(0xFF08040A);
-  static const surface = Color(0xFF1A0F0A);
-  static const surface2 = Color(0xFF251812);
-  static const surface3 = Color(0xFF2F1F17);
-  static const primary = Color(0xFFE8854A);
-  static const primarySoft = Color(0xFFF5A574);
-  static const primaryDeep = Color(0xFFC26835);
-  static const cream = Color(0xFFF5E6D3);
-  static const creamWarm = Color(0xFFEFD9BF);
-  static const textPrimary = Color(0xFFFFFAF3);
-  static const textSecondary = Color(0xAAFFFAF3);
-  static const textMuted = Color(0x66FFFAF3);
-  static const success = Color(0xFF6EE7A7);
-  static const successBg = Color(0x1F6EE7A7);
-  static const warningBg = Color(0x1AE8854A);
-  static const border = Color(0x12FFE6C8);
-  static const borderStrong = Color(0x24FFE6C8);
+  // Vibrant Amber + Deep Navy — Filby Coffee
+  static const bg = Color(0xFF0C1018);
+  static const bgDeep = Color(0xFF080C12);
+  static const surface = Color(0xFF141C2A);
+  static const surface2 = Color(0xFF1C2840);
+  static const surface3 = Color(0xFF243556);
+  static const primary = Color(0xFFFF9500);       // Vivid amber-orange
+  static const primarySoft = Color(0xFFFFB340);
+  static const primaryDeep = Color(0xFFCC7700);
+  static const navy = Color(0xFF1C2E50);
+  static const navySoft = Color(0xFF263F6E);
+  static const cream = Color(0xFFFFF8EE);
+  static const creamWarm = Color(0xFFFFF0D8);
+  static const textPrimary = Color(0xFFFFF8F0);
+  static const textSecondary = Color(0xCCFFF8F0);
+  static const textMuted = Color(0x77FFF8F0);
+  static const success = Color(0xFF00E676);
+  static const successBg = Color(0x2200E676);
+  static const warningBg = Color(0x22FF9500);
+  static const border = Color(0x22FF9500);
+  static const borderStrong = Color(0x44FF9500);
 }
 
 // Use these style helpers everywhere instead of fontFamily strings
@@ -67,7 +70,7 @@ ThemeData filbyTheme() {
       iconTheme: const IconThemeData(color: FilbyColors.textPrimary),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: Color(0xEB0E0703),
+      backgroundColor: Color(0xEB070B14),
       selectedItemColor: FilbyColors.primary,
       unselectedItemColor: FilbyColors.textMuted,
       type: BottomNavigationBarType.fixed,

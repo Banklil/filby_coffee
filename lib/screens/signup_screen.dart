@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
@@ -14,6 +15,7 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _emailCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
   bool _obscurePass = true;
@@ -24,13 +26,14 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void dispose() {
     _emailCtrl.dispose();
+    _nameCtrl.dispose();
     _passCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _signup() async {
-    if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty || _confirmCtrl.text.isEmpty) {
+    if (_emailCtrl.text.isEmpty || _nameCtrl.text.isEmpty || _passCtrl.text.isEmpty || _confirmCtrl.text.isEmpty) {
       setState(() => _error = 'ກະລຸນາໃສ່ຂໍ້ມູນໃຫ້ຄົບ');
       return;
     }
@@ -44,7 +47,7 @@ class _SignupScreenState extends State<SignupScreen> {
     }
 
     setState(() { _loading = true; _error = null; });
-    final err = await AuthService.signUpWithEmail(_emailCtrl.text.trim(), _passCtrl.text);
+    final err = await AuthService.signUpWithEmail(_emailCtrl.text.trim(), _passCtrl.text, shopName: _nameCtrl.text.trim());
     if (!mounted) return;
     setState(() => _loading = false);
     if (err != null) {
@@ -52,7 +55,10 @@ class _SignupScreenState extends State<SignupScreen> {
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainNav()),
+        MaterialPageRoute(builder: (_) => _SignupSuccessScreen(
+          email: _emailCtrl.text.trim(),
+          shopName: _nameCtrl.text.trim(),
+        )),
       );
     }
   }
@@ -87,25 +93,22 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: 24),
                   Center(
                     child: Container(
-                      width: 76,
-                      height: 76,
+                      width: 140,
+                      height: 140,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [FilbyColors.primary, FilbyColors.primaryDeep],
-                        ),
-                        borderRadius: BorderRadius.circular(22),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: FilbyColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
+                            color: FilbyColors.primary.withValues(alpha: 0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text('f', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w800, color: Colors.white)),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset('assets/logo.jpeg', fit: BoxFit.contain),
                       ),
                     ),
                   ),
@@ -144,6 +147,13 @@ class _SignupScreenState extends State<SignupScreen> {
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     icon: Icons.email_outlined,
+                  ),
+                  const SizedBox(height: 14),
+                  _SignupField(
+                    label: 'ຊື່ຮ້ານ',
+                    hint: 'ຕົວຢ່າງ: Filby Coffee',
+                    controller: _nameCtrl,
+                    icon: Icons.store_outlined,
                   ),
                   const SizedBox(height: 14),
                   _SignupField(
@@ -269,6 +279,113 @@ class _SignupField extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SignupSuccessScreen extends StatelessWidget {
+  final String email;
+  final String shopName;
+  const _SignupSuccessScreen({required this.email, required this.shopName});
+
+  static const _webUrl = 'https://valiant-ambition-production.up.railway.app/docs';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: FilbyColors.bg,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 90, height: 90,
+                decoration: BoxDecoration(color: FilbyColors.successBg, shape: BoxShape.circle),
+                child: const Icon(Icons.check_circle, size: 52, color: FilbyColors.success),
+              ),
+              const SizedBox(height: 24),
+              Text('ສ້າງບັນຊີສຳເລັດ!', style: GoogleFonts.notoSerifLao(fontSize: 24, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
+              const SizedBox(height: 8),
+              Text(shopName, style: const TextStyle(fontSize: 16, color: FilbyColors.primary, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(email, style: const TextStyle(fontSize: 13, color: FilbyColors.textSecondary)),
+              const SizedBox(height: 32),
+              // Web redirect card
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: FilbyColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: FilbyColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.web, size: 18, color: FilbyColors.primary),
+                        const SizedBox(width: 8),
+                        Text('ຂໍ້ມູນຮ້ານ', style: GoogleFonts.notoSerifLao(fontSize: 14, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'ກະລຸນາເຂົ້າ web ເພື່ອ:\n• ກຳນົດທີ່ຢູ່ຮ້ານ\n• ອັບໂຫລດເອກະສານ\n• ສະໝັກສິນເຊື່ອ\n• ເພີ່ມຂໍ້ມູນລາຍລະອຽດ',
+                      style: TextStyle(fontSize: 13, color: FilbyColors.textSecondary, height: 1.7),
+                    ),
+                    const SizedBox(height: 14),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(const ClipboardData(text: _webUrl));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Copy URL ແລ້ວ — paste ໃນ browser'), backgroundColor: FilbyColors.primary),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: FilbyColors.surface2,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: FilbyColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.link, size: 14, color: FilbyColors.primary),
+                            const SizedBox(width: 6),
+                            const Expanded(child: Text('filby-coffee.onrender.com', style: TextStyle(fontSize: 11, color: FilbyColors.primary))),
+                            const Icon(Icons.copy, size: 14, color: FilbyColors.textMuted),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MainNav()),
+                    (_) => false,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FilbyColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  child: const Text('ເຂົ້າໃຊ້ App ໄດ້ເລີຍ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

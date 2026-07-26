@@ -24,6 +24,9 @@ class FilbyApp extends StatelessWidget {
       theme: filbyTheme(),
       debugShowCheckedModeBanner: false,
       home: const _AuthGate(),
+      routes: {
+        '/login': (_) => const LoginScreen(),
+      },
     );
   }
 }

@@ -14,13 +14,13 @@ class _FinanceScreenState extends State<FinanceScreen> {
   final List<String> _periods = ['ມື້ນີ້', 'ອາທິດນີ້', 'ເດືອນນີ້'];
 
   final List<_DayData> _chartData = const [
-    _DayData('ຈ', 0.50, 0.18),
-    _DayData('ອ', 0.65, 0.22),
-    _DayData('ພ', 0.45, 0.28),
-    _DayData('ພຫ', 0.75, 0.20),
-    _DayData('ສຸ', 0.90, 0.30),
-    _DayData('ສ', 0.95, 0.25),
-    _DayData('ອາ', 0.70, 0.18),
+    _DayData('ຈ', 0, 0),
+    _DayData('ອ', 0, 0),
+    _DayData('ພ', 0, 0),
+    _DayData('ພຫ', 0, 0),
+    _DayData('ສຸ', 0, 0),
+    _DayData('ສ', 0, 0),
+    _DayData('ອາ', 0, 0),
   ];
 
   String _fmt(int n) {
@@ -119,7 +119,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    '6,300,000',
+                    '—',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
@@ -127,7 +127,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const Text('ກີບ · ທຽບກັບອາທິດແລ້ວ', style: TextStyle(fontSize: 11, color: FilbyColors.textSecondary)),
+                  const Text('ກີບ · ຍັງບໍ່ມີຂໍ້ມູນ', style: TextStyle(fontSize: 11, color: FilbyColors.textSecondary)),
                   const SizedBox(height: 16),
                   const Divider(color: FilbyColors.border, height: 1),
                   const SizedBox(height: 16),
@@ -139,7 +139,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                           iconBg: FilbyColors.successBg,
                           iconColor: FilbyColors.success,
                           label: 'ລາຍຮັບ',
-                          value: '8,450,000',
+                          value: '—',
                         ),
                       ),
                       Expanded(
@@ -148,7 +148,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                           iconBg: FilbyColors.warningBg,
                           iconColor: FilbyColors.primary,
                           label: 'ລາຍຈ່າຍ',
-                          value: '2,150,000',
+                          value: '—',
                         ),
                       ),
                     ],
@@ -209,9 +209,12 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 children: [
                   Text('ສິນຄ້າຂາຍດີ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
                   SizedBox(height: 14),
-                  _TopItem(rank: 1, name: 'Latte', amount: '156 ຈອກ', percent: 0.85),
-                  _TopItem(rank: 2, name: 'Espresso', amount: '134 ຈອກ', percent: 0.72),
-                  _TopItem(rank: 3, name: 'Iced Americano', amount: '98 ຈອກ', percent: 0.53),
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text('ຍັງບໍ່ມີຂໍ້ມູນ', style: TextStyle(fontSize: 13, color: FilbyColors.textMuted)),
+                    ),
+                  ),
                 ],
               ),
             ),

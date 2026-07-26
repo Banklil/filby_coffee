@@ -26,6 +26,70 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _showForgotPassword(BuildContext context) async {
+    final emailCtrl = TextEditingController(text: _emailCtrl.text);
+    String? msg;
+    bool sending = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          backgroundColor: FilbyColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('ລືມລະຫັດ', style: TextStyle(color: FilbyColors.textPrimary, fontWeight: FontWeight.w700)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('ໃສ່ email ຂອງທ່ານ ພວກເຮົາຈະສົ່ງລິ້ງ reset ໄປໃຫ້', style: TextStyle(fontSize: 13, color: FilbyColors.textSecondary)),
+              const SizedBox(height: 14),
+              TextField(
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(fontSize: 14, color: FilbyColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'your@gmail.com',
+                  hintStyle: const TextStyle(color: FilbyColors.textMuted),
+                  filled: true,
+                  fillColor: FilbyColors.bg,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: FilbyColors.border)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+              ),
+              if (msg != null) ...[
+                const SizedBox(height: 10),
+                Text(msg!, style: TextStyle(fontSize: 12, color: msg!.startsWith('ສົ່ງ') ? FilbyColors.primary : const Color(0xFFE85A4A))),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('ຍົກເລີກ', style: TextStyle(color: FilbyColors.textMuted)),
+            ),
+            ElevatedButton(
+              onPressed: sending ? null : () async {
+                if (emailCtrl.text.isEmpty) return;
+                setS(() { sending = true; msg = null; });
+                final err = await AuthService.forgotPassword(emailCtrl.text.trim());
+                setS(() {
+                  sending = false;
+                  msg = err ?? 'ສົ່ງ email reset ລະຫັດແລ້ວ ກວດກ່ອງຈົດໝາຍຂອງທ່ານ';
+                });
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: FilbyColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              child: sending
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('ສົ່ງ'),
+            ),
+          ],
+        ),
+      ),
+    );
+    emailCtrl.dispose();
+  }
+
   Future<void> _login() async {
     if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
       setState(() => _error = 'ກະລຸນາໃສ່ email ແລະ ລະຫັດຜ່ານ');
@@ -66,25 +130,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 56),
                   Center(
                     child: Container(
-                      width: 76,
-                      height: 76,
+                      width: 160,
+                      height: 160,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [FilbyColors.primary, FilbyColors.primaryDeep],
-                        ),
-                        borderRadius: BorderRadius.circular(22),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: FilbyColors.primary.withValues(alpha: 0.4),
+                            color: FilbyColors.primary.withValues(alpha: 0.2),
                             blurRadius: 24,
-                            offset: const Offset(0, 10),
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text('f', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w800, color: Colors.white)),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.asset('assets/logo.jpeg', fit: BoxFit.contain),
                       ),
                     ),
                   ),
@@ -140,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
-                      onTap: () {},
+                      onTap: () => _showForgotPassword(context),
                       child: const Text('ລືມລະຫັດ?', style: TextStyle(fontSize: 13, color: FilbyColors.primary, fontWeight: FontWeight.w600)),
                     ),
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/cart_manager.dart';
 import 'home_screen.dart';
 import 'products_screen.dart';
 import 'cart_screen.dart';
@@ -23,6 +24,20 @@ class _MainNavState extends State<MainNav> {
     FinanceScreen(),
     ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    CartManager.instance.addListener(_onCartChanged);
+  }
+
+  @override
+  void dispose() {
+    CartManager.instance.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +77,7 @@ class _MainNavState extends State<MainNav> {
                   activeIcon: Icons.shopping_cart,
                   label: 'ສັ່ງຊື້',
                   isActive: _currentIndex == 2,
-                  badge: 2,
+                  badge: CartManager.instance.count > 0 ? CartManager.instance.count : null,
                   onTap: () => setState(() => _currentIndex = 2),
                 ),
                 _NavItem(

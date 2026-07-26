@@ -47,6 +47,14 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ໃຊ້ຮູບໃນ Photo Library ສຳລັບຮູບເມນູ</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ໃຊ້ກ້ອງຖ່າຍຮູບເມນູ</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ແອັບໃຊ້ GPS ເພື່ອຊ່ວຍລະບຸທີ່ຢູ່ຈັດສົ່ງຂອງທ່ານ</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>ແອັບໃຊ້ GPS ເພື່ອຊ່ວຍລະບຸທີ່ຢູ່ຈັດສົ່ງຂອງທ່ານ</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
+import '../services/cart_manager.dart';
 import 'cart_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -14,7 +15,6 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   int _catIndex = 0;
-  final Map<int, int> _cart = {};
   List<_Product> _products = [];
   bool _loading = true;
   String? _error;
@@ -60,7 +60,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return list;
   }
 
-  int get _cartTotal => _cart.values.fold(0, (a, b) => a + b);
+  int get _cartTotal => CartManager.instance.count;
 
   @override
   Widget build(BuildContext context) {
@@ -180,16 +180,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
       itemCount: _filtered.length,
       itemBuilder: (_, i) {
         final p = _filtered[i];
-        final qty = _cart[p.id] ?? 0;
+        final qty = CartManager.instance.qty(p.id);
         return _ProductCard(
           product: p,
           qty: qty,
-          onAdd: () => setState(() => _cart[p.id] = qty + 1),
+          onAdd: () => setState(() => CartManager.instance.add(p.id, p.name, p.emoji, p.price, p.unit)),
           onRemove: qty > 0
-              ? () => setState(() {
-                    if (qty == 1) _cart.remove(p.id);
-                    else _cart[p.id] = qty - 1;
-                  })
+              ? () => setState(() => CartManager.instance.remove(p.id))
               : null,
         );
       },

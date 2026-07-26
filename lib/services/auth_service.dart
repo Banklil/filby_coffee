@@ -53,7 +53,7 @@ class AuthService {
       final res = await http.get(
         Uri.parse('$baseUrl/api/shop/me'),
         headers: {'Authorization': 'Bearer $token'},
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 90));
       if (res.statusCode == 200) {
         _currentUser = AuthUser.fromJson(jsonDecode(res.body));
         return null;
@@ -71,7 +71,7 @@ class AuthService {
         Uri.parse('$baseUrl/api/shop/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 90));
       if (res.headers['content-type']?.contains('application/json') != true) {
         return 'HTTP ${res.statusCode} — server returned non-JSON (wrong URL?)';
       }
@@ -95,7 +95,7 @@ class AuthService {
         Uri.parse('$baseUrl/api/shop/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password, 'shop_name': shopName}),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 90));
       final body = jsonDecode(res.body);
       if (res.statusCode == 200) {
         await _saveToken(body['access_token']);
@@ -103,6 +103,67 @@ class AuthService {
         return null;
       }
       return body['detail'] ?? 'ສ້າງບັນຊີບໍ່ສຳເລັດ';
+    } on TimeoutException {
+      return 'Server ໃຊ້ເວລາດົນ — ລອງໃໝ່ອີກຄັ້ງ';
+    } on Exception catch (e) {
+      return 'Error: ${e.toString().substring(0, e.toString().length.clamp(0, 80))}';
+    }
+  }
+
+  static Future<String?> forgotPassword(String email) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/shop/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ).timeout(const Duration(seconds: 90));
+      if (res.headers['content-type']?.contains('application/json') != true) {
+        return 'HTTP ${res.statusCode}';
+      }
+      final body = jsonDecode(res.body);
+      if (res.statusCode == 200) return null;
+      return body['detail'] ?? 'ສົ່ງຄຳຂໍບໍ່ສຳເລັດ (${res.statusCode})';
+    } on TimeoutException {
+      return 'Server ໃຊ້ເວລາດົນ — ລອງໃໝ່ອີກຄັ້ງ';
+    } on Exception catch (e) {
+      return 'Error: ${e.toString().substring(0, e.toString().length.clamp(0, 80))}';
+    }
+  }
+
+  static Future<bool> checkEmailVerified() async {
+    final token = await _getToken();
+    if (token == null) return false;
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/shop/me'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 90));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        return body['is_verified'] == true || body['email_verified'] == true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<String?> resendVerificationEmail() async {
+    final token = await _getToken();
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/shop/resend-verification'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 90));
+      if (res.statusCode == 200) return null;
+      if (res.headers['content-type']?.contains('application/json') == true) {
+        final body = jsonDecode(res.body);
+        return body['detail'] ?? 'ສົ່ງ email ໃໝ່ບໍ່ສຳເລັດ';
+      }
+      return 'ສົ່ງ email ໃໝ່ບໍ່ສຳເລັດ (${res.statusCode})';
     } on TimeoutException {
       return 'Server ໃຊ້ເວລາດົນ — ລອງໃໝ່ອີກຄັ້ງ';
     } on Exception catch (e) {
