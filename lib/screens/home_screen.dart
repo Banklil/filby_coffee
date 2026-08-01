@@ -5,8 +5,37 @@ import '../services/auth_service.dart';
 import 'pos_screen.dart';
 import 'credit_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? _summary;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final s = await AuthService.fetchSummary('month');
+    if (mounted) setState(() { _summary = s; _loading = false; });
+  }
+
+  String _fmt(num n) {
+    final s = n.round().toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +67,9 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 _buildQuickActions(context),
                 const SizedBox(height: 20),
-                _buildSectionTitle('ສະຕັອກໃກ້ໝົດ'),
+                _buildSectionTitle('ເມັດກາເຟໃນສະຕັອກ'),
                 const SizedBox(height: 10),
-                _buildEmptyStock(),
+                _buildStockCard(),
                 const SizedBox(height: 100),
               ],
             ),
@@ -98,11 +127,15 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildStatsGrid() {
-    return const Row(
+    final income = _summary?['income'];
+    final count = _summary?['sales_count'];
+    final incomeStr = _loading ? '…' : (income == null ? '—' : _fmt(income as num));
+    final countStr = _loading ? '…' : (count == null ? '—' : '$count');
+    return Row(
       children: [
-        Expanded(child: _StatCard(label: 'ລາຍໄດ້ເດືອນ', value: '—', sub: 'ກີບ')),
-        SizedBox(width: 10),
-        Expanded(child: _StatCard(label: 'ຍອດສັ່ງຊື້', value: '—', sub: 'ລາຍການ')),
+        Expanded(child: _StatCard(label: 'ລາຍໄດ້ເດືອນ', value: incomeStr, sub: 'ກີບ')),
+        const SizedBox(width: 10),
+        Expanded(child: _StatCard(label: 'ຍອດຂາຍ', value: countStr, sub: 'ລາຍການ')),
       ],
     );
   }
@@ -141,19 +174,51 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyStock() {
+  Widget _buildStockCard() {
+    final kg = (_summary?['bean_balance_kg'] as num?)?.toDouble();
+    final low = kg != null && kg <= 1.0;
+    final Color accent = kg == null
+        ? FilbyColors.textMuted
+        : (low ? const Color(0xFFEF4444) : FilbyColors.primary);
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: FilbyColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: FilbyColors.border),
+        border: Border.all(color: accent.withOpacity(0.5)),
       ),
-      child: const Center(
-        child: Text(
-          'ຍັງບໍ່ມີຂໍ້ມູນສະຕັອກ',
-          style: TextStyle(fontSize: 13, color: FilbyColors.textMuted),
-        ),
+      child: Row(
+        children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(low ? Icons.warning_amber_rounded : Icons.coffee_rounded,
+                color: accent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('ເມັດກາເຟເຫຼືອ',
+                    style: TextStyle(fontSize: 11, color: FilbyColors.textSecondary)),
+                const SizedBox(height: 2),
+                Text(
+                  _loading ? '…' : (kg == null ? '—' : '${kg.toStringAsFixed(1)} kg'),
+                  style: TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w800, color: accent),
+                ),
+              ],
+            ),
+          ),
+          if (low)
+            const Text('ໃກ້ໝົດ!',
+                style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFEF4444))),
+        ],
       ),
     );
   }

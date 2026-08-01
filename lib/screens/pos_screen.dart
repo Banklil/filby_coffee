@@ -580,8 +580,24 @@ class _PosScreenState extends State<PosScreen> {
         fmt: _fmt,
         onConfirm: () async {
           final beansKg = _orderBeansKg;
+          final totalPrice = _totalPrice.toDouble();
+          final items = _order.entries
+              .map((e) {
+                try {
+                  final m = _menu.firstWhere((x) => x.id == e.key);
+                  return {'name': m.name, 'qty': e.value, 'price': m.price};
+                } catch (_) {
+                  return null;
+                }
+              })
+              .whereType<Map<String, dynamic>>()
+              .toList();
           Navigator.pop(context); // close the checkout sheet
-          final result = await AuthService.posSale(beansKg);
+          final result = await AuthService.posSale(
+            beansKg,
+            totalPrice: totalPrice,
+            items: items,
+          );
           if (!mounted) return;
           setState(() {
             _order.clear();

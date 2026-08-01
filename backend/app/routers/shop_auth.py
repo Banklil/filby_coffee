@@ -216,7 +216,9 @@ def get_stock(owner: ShopOwner = Depends(_get_owner)):
 
 
 class PosSaleRequest(BaseModel):
-    beans_kg: float  # total coffee beans consumed by this sale, in kg
+    beans_kg: float = 0            # total coffee beans consumed by this sale, in kg
+    total_price: float = 0        # total sale amount, in kip
+    items: Optional[list] = None  # [{name, qty, price}]
 
 
 class PosSaleResult(BaseModel):
@@ -227,13 +229,23 @@ class PosSaleResult(BaseModel):
 
 @router.post("/pos-sale", response_model=PosSaleResult)
 def pos_sale(body: PosSaleRequest, owner: ShopOwner = Depends(_get_owner), db: Session = Depends(get_db)):
-    """Deduct beans from the shop's stock when a POS sale is completed.
+    """Record a POS sale and deduct beans from the shop's stock.
     Balance is floored at 0; `insufficient` flags when the sale exceeded stock."""
+    from ..models.pos_sale import PosSale
+
     want = max(0.0, float(body.beans_kg or 0))
     current = float(owner.bean_balance_kg or 0)
     insufficient = want > current
     deducted = min(want, current)
     owner.bean_balance_kg = round(current - deducted, 4)
+
+    # Persist the sale so income / best-seller reports have data.
+    db.add(PosSale(
+        owner_id=owner.id,
+        amount=float(body.total_price or 0),
+        beans_kg=want,
+        items=body.items,
+    ))
     db.commit()
     db.refresh(owner)
     return PosSaleResult(
@@ -241,3 +253,83 @@ def pos_sale(body: PosSaleRequest, owner: ShopOwner = Depends(_get_owner), db: S
         deducted_kg=deducted,
         insufficient=insufficient,
     )
+
+
+@router.get("/summary")
+def shop_summary(
+    period: str = "month",  # "day" | "week" | "month"
+    owner: ShopOwner = Depends(_get_owner),
+    db: Session = Depends(get_db),
+):
+    """Income / expense / net-profit + weekly chart + best sellers for the shop.
+    Income = POS sales; expense = bean purchases (bean orders)."""
+    from datetime import date, timedelta
+    from sqlalchemy import func as _f
+    from ..models.pos_sale import PosSale
+
+    today = date.today()
+    if period == "day":
+        start = today
+    elif period == "week":
+        start = today - timedelta(days=6)
+    else:
+        start = today.replace(day=1)
+
+    income = db.query(_f.coalesce(_f.sum(PosSale.amount), 0)).filter(
+        PosSale.owner_id == owner.id,
+        _f.date(PosSale.created_at) >= start,
+    ).scalar() or 0
+
+    sales_count = db.query(_f.count(PosSale.id)).filter(
+        PosSale.owner_id == owner.id,
+        _f.date(PosSale.created_at) >= start,
+    ).scalar() or 0
+
+    expense = db.query(_f.coalesce(_f.sum(BeanOrder.total_price), 0)).filter(
+        BeanOrder.owner_id == owner.id,
+        _f.date(BeanOrder.created_at) >= start,
+        BeanOrder.status != "cancelled",
+    ).scalar() or 0
+
+    # ── Weekly chart: income vs expense for the last 7 days ──────────────
+    weekly = []
+    labels = ["ຈ", "ອ", "ພ", "ພຫ", "ສຸ", "ສ", "ອາ"]
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        inc = db.query(_f.coalesce(_f.sum(PosSale.amount), 0)).filter(
+            PosSale.owner_id == owner.id, _f.date(PosSale.created_at) == d,
+        ).scalar() or 0
+        exp = db.query(_f.coalesce(_f.sum(BeanOrder.total_price), 0)).filter(
+            BeanOrder.owner_id == owner.id, _f.date(BeanOrder.created_at) == d,
+            BeanOrder.status != "cancelled",
+        ).scalar() or 0
+        weekly.append({"label": labels[d.weekday()], "income": float(inc), "expense": float(exp)})
+
+    # ── Best sellers: aggregate item names across POS sales in period ────
+    sales = db.query(PosSale).filter(
+        PosSale.owner_id == owner.id,
+        _f.date(PosSale.created_at) >= start,
+    ).all()
+    agg: dict = {}
+    for s in sales:
+        for it in (s.items or []):
+            if not isinstance(it, dict):
+                continue
+            name = it.get("name") or "—"
+            qty = float(it.get("qty") or 0)
+            revenue = float(it.get("price") or 0) * qty
+            row = agg.setdefault(name, {"name": name, "qty": 0.0, "revenue": 0.0})
+            row["qty"] += qty
+            row["revenue"] += revenue
+    top_items = sorted(agg.values(), key=lambda r: r["revenue"], reverse=True)[:5]
+
+    return {
+        "period":          period,
+        "income":          float(income),
+        "expense":         float(expense),
+        "net_profit":      float(income) - float(expense),
+        "sales_count":     int(sales_count),
+        "bean_balance_kg": float(owner.bean_balance_kg or 0),
+        "weekly":          weekly,
+        "top_items":       top_items,
+    }

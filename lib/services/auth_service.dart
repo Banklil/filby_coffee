@@ -190,9 +190,13 @@ class AuthService {
     }
   }
 
-  /// Deduct [beansKg] of beans from the shop stock after a POS sale.
+  /// Record a POS sale: deduct [beansKg] of beans and log the sale amount/items.
   /// Returns the new balance + whether stock was insufficient, or null on error.
-  static Future<({double balanceKg, bool insufficient})?> posSale(double beansKg) async {
+  static Future<({double balanceKg, bool insufficient})?> posSale(
+    double beansKg, {
+    double totalPrice = 0,
+    List<Map<String, dynamic>>? items,
+  }) async {
     final token = await _getToken();
     if (token == null) return null;
     try {
@@ -202,7 +206,11 @@ class AuthService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'beans_kg': beansKg}),
+        body: jsonEncode({
+          'beans_kg': beansKg,
+          'total_price': totalPrice,
+          if (items != null) 'items': items,
+        }),
       ).timeout(const Duration(seconds: 30));
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body);
@@ -210,6 +218,25 @@ class AuthService {
           balanceKg: (body['bean_balance_kg'] as num?)?.toDouble() ?? 0,
           insufficient: body['insufficient'] == true,
         );
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Income / expense / net-profit + weekly + best-sellers for the shop.
+  /// [period] is "day", "week", or "month". Null on failure.
+  static Future<Map<String, dynamic>?> fetchSummary(String period) async {
+    final token = await _getToken();
+    if (token == null) return null;
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/shop/summary?period=$period'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 30));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
       }
       return null;
     } catch (_) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
+import '../services/auth_service.dart';
 
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key});
@@ -12,25 +13,88 @@ class FinanceScreen extends StatefulWidget {
 class _FinanceScreenState extends State<FinanceScreen> {
   int _periodIndex = 1;
   final List<String> _periods = ['ມື້ນີ້', 'ອາທິດນີ້', 'ເດືອນນີ້'];
+  static const List<String> _periodKeys = ['day', 'week', 'month'];
 
-  final List<_DayData> _chartData = const [
-    _DayData('ຈ', 0, 0),
-    _DayData('ອ', 0, 0),
-    _DayData('ພ', 0, 0),
-    _DayData('ພຫ', 0, 0),
-    _DayData('ສຸ', 0, 0),
-    _DayData('ສ', 0, 0),
-    _DayData('ອາ', 0, 0),
-  ];
+  Map<String, dynamic>? _summary;
+  bool _loading = true;
 
-  String _fmt(int n) {
-    final s = n.toString();
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final s = await AuthService.fetchSummary(_periodKeys[_periodIndex]);
+    if (mounted) setState(() { _summary = s; _loading = false; });
+  }
+
+  // Convert the API weekly series into normalized bar data (fractions 0..1).
+  List<_DayData> get _chartData {
+    final weekly = (_summary?['weekly'] as List?) ?? const [];
+    if (weekly.isEmpty) {
+      return const [
+        _DayData('ຈ', 0, 0), _DayData('ອ', 0, 0), _DayData('ພ', 0, 0),
+        _DayData('ພຫ', 0, 0), _DayData('ສຸ', 0, 0), _DayData('ສ', 0, 0),
+        _DayData('ອາ', 0, 0),
+      ];
+    }
+    double maxV = 1;
+    for (final d in weekly) {
+      final inc = (d['income'] as num?)?.toDouble() ?? 0;
+      final exp = (d['expense'] as num?)?.toDouble() ?? 0;
+      if (inc > maxV) maxV = inc;
+      if (exp > maxV) maxV = exp;
+    }
+    return weekly.map<_DayData>((d) {
+      final inc = (d['income'] as num?)?.toDouble() ?? 0;
+      final exp = (d['expense'] as num?)?.toDouble() ?? 0;
+      return _DayData((d['label'] as String?) ?? '', inc / maxV, exp / maxV);
+    }).toList();
+  }
+
+  double get _income => (_summary?['income'] as num?)?.toDouble() ?? 0;
+  double get _expense => (_summary?['expense'] as num?)?.toDouble() ?? 0;
+  double get _netProfit => (_summary?['net_profit'] as num?)?.toDouble() ?? 0;
+  int get _salesCount => (_summary?['sales_count'] as num?)?.toInt() ?? 0;
+
+  String _fmt(num n0) {
+    final s = n0.round().toString();
     final buf = StringBuffer();
     for (int i = 0; i < s.length; i++) {
       if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
       buf.write(s[i]);
     }
     return buf.toString();
+  }
+
+  List<Widget> _buildTopItems() {
+    final items = (_summary?['top_items'] as List?) ?? const [];
+    if (items.isEmpty) {
+      return [
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(_loading ? '…' : 'ຍັງບໍ່ມີຂໍ້ມູນ',
+                style: const TextStyle(fontSize: 13, color: FilbyColors.textMuted)),
+          ),
+        ),
+      ];
+    }
+    final maxRev = items.fold<double>(1, (m, e) {
+      final r = (e['revenue'] as num?)?.toDouble() ?? 0;
+      return r > m ? r : m;
+    });
+    return [
+      for (int i = 0; i < items.length; i++)
+        _TopItem(
+          rank: i + 1,
+          name: (items[i]['name'] as String?) ?? '—',
+          amount: '${_fmt((items[i]['revenue'] as num?)?.toDouble() ?? 0)} ກີບ',
+          percent: ((items[i]['revenue'] as num?)?.toDouble() ?? 0) / maxRev,
+        ),
+    ];
   }
 
   @override
@@ -59,7 +123,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   child: Padding(
                     padding: EdgeInsets.only(right: i < _periods.length - 1 ? 8 : 0),
                     child: GestureDetector(
-                      onTap: () => setState(() => _periodIndex = i),
+                      onTap: () { setState(() => _periodIndex = i); _load(); },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         height: 36,
@@ -100,38 +164,31 @@ class _FinanceScreenState extends State<FinanceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
-                      const Text('ກຳໄລສຸດທິ', style: TextStyle(fontSize: 12, color: FilbyColors.textSecondary)),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: FilbyColors.successBg,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Text(
-                          '↑ +18.5%',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: FilbyColors.success),
-                        ),
-                      ),
+                      Text('ກຳໄລສຸດທິ', style: TextStyle(fontSize: 12, color: FilbyColors.textSecondary)),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    '—',
+                  Text(
+                    _loading
+                        ? '…'
+                        : (_summary == null ? '—' : _fmt(_netProfit)),
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
-                      color: FilbyColors.success,
+                      color: _netProfit < 0 ? const Color(0xFFEF4444) : FilbyColors.success,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const Text('ກີບ · ຍັງບໍ່ມີຂໍ້ມູນ', style: TextStyle(fontSize: 11, color: FilbyColors.textSecondary)),
+                  Text(
+                    _summary == null ? 'ກີບ · ຍັງບໍ່ມີຂໍ້ມູນ' : 'ກີບ · ຂາຍ ${_salesCount} ລາຍການ',
+                    style: const TextStyle(fontSize: 11, color: FilbyColors.textSecondary),
+                  ),
                   const SizedBox(height: 16),
                   const Divider(color: FilbyColors.border, height: 1),
                   const SizedBox(height: 16),
-                  const Row(
+                  Row(
                     children: [
                       Expanded(
                         child: _SplitItem(
@@ -139,7 +196,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                           iconBg: FilbyColors.successBg,
                           iconColor: FilbyColors.success,
                           label: 'ລາຍຮັບ',
-                          value: '—',
+                          value: _summary == null ? '—' : _fmt(_income),
                         ),
                       ),
                       Expanded(
@@ -148,7 +205,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                           iconBg: FilbyColors.warningBg,
                           iconColor: FilbyColors.primary,
                           label: 'ລາຍຈ່າຍ',
-                          value: '—',
+                          value: _summary == null ? '—' : _fmt(_expense),
                         ),
                       ),
                     ],
@@ -204,17 +261,12 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: FilbyColors.border),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('ສິນຄ້າຂາຍດີ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
-                  SizedBox(height: 14),
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text('ຍັງບໍ່ມີຂໍ້ມູນ', style: TextStyle(fontSize: 13, color: FilbyColors.textMuted)),
-                    ),
-                  ),
+                  const Text('ສິນຄ້າຂາຍດີ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
+                  const SizedBox(height: 14),
+                  ..._buildTopItems(),
                 ],
               ),
             ),

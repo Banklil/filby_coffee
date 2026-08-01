@@ -10,3 +10,4 @@ from .shop_owner import ShopOwner
 from .finance import FinanceEntry
 from .bean_order import BeanOrder
 from .credit_application import CreditApplication
+from .pos_sale import PosSale
