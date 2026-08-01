@@ -171,6 +171,52 @@ class AuthService {
     }
   }
 
+  /// Remaining coffee-bean stock for the shop, in kilograms. Null on failure.
+  static Future<double?> fetchBeanStock() async {
+    final token = await _getToken();
+    if (token == null) return null;
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/shop/stock'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 30));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        return (body['bean_balance_kg'] as num?)?.toDouble() ?? 0;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Deduct [beansKg] of beans from the shop stock after a POS sale.
+  /// Returns the new balance + whether stock was insufficient, or null on error.
+  static Future<({double balanceKg, bool insufficient})?> posSale(double beansKg) async {
+    final token = await _getToken();
+    if (token == null) return null;
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/shop/pos-sale'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'beans_kg': beansKg}),
+      ).timeout(const Duration(seconds: 30));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        return (
+          balanceKg: (body['bean_balance_kg'] as num?)?.toDouble() ?? 0,
+          insufficient: body['insufficient'] == true,
+        );
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<void> signOut() async {
     await _clearToken();
   }

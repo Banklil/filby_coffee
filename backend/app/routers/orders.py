@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import Optional
 import math
 from ..database import get_db
@@ -52,8 +53,44 @@ def update_order_status(
     if data.tracking_number:
         order.tracking_number = data.tracking_number
     db.add(AuditLog(admin_id=current_user.id, action="order.status_update", entity_type="order", entity_id=order_id, log_metadata={"status": data.status}))
+
+    # ── Credit bean stock to the shop when a bean order is delivered ──────
+    # Bean orders are mirrored here with order_id "BO######" and each item
+    # carries its bean_order_id. On delivery we add the ordered kg to the
+    # shop owner's balance exactly once (guarded by BeanOrder.stock_credited).
+    if data.status == "delivered":
+        try:
+            _credit_bean_stock_on_delivery(db, order)
+        except Exception as _e:
+            print(f"[WARN] bean stock credit: {_e}")
+
     db.commit()
     return {"message": "ອັບເດດສະຖານະສຳເລັດ"}
+
+
+def _credit_bean_stock_on_delivery(db: Session, order: Order) -> None:
+    from ..models.bean_order import BeanOrder
+    from ..models.shop_owner import ShopOwner
+
+    items = order.items or []
+    bean_order_ids = [
+        it.get("bean_order_id") for it in items
+        if isinstance(it, dict) and it.get("bean_order_id")
+    ]
+    if not bean_order_ids:
+        return
+
+    for bo_id in bean_order_ids:
+        bo = db.query(BeanOrder).filter(BeanOrder.id == bo_id).first()
+        if not bo or bo.stock_credited:
+            continue
+        owner = db.query(ShopOwner).filter(ShopOwner.id == bo.owner_id).first()
+        if not owner:
+            continue
+        owner.bean_balance_kg = float(owner.bean_balance_kg or 0) + float(bo.quantity or 0)
+        bo.stock_credited = True
+        bo.status = "delivered"
+        bo.delivered_at = func.now()
 
 
 @router.post("/{order_id}/cancel")

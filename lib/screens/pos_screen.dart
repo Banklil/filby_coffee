@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
+import '../services/auth_service.dart';
 
 // ── Data model ─────────────────────────────────────────────────────────────
 
@@ -15,6 +16,7 @@ class PosMenuItem {
   int price;
   String category;
   String? imageBase64;
+  double beansG; // grams of coffee beans consumed per cup (for stock deduction)
 
   PosMenuItem({
     String? id,
@@ -23,6 +25,7 @@ class PosMenuItem {
     required this.price,
     this.category = 'ກາເຟ',
     this.imageBase64,
+    this.beansG = 18,
   }) : id = id ?? DateTime.now().microsecondsSinceEpoch.toString();
 
   Uint8List? get imageBytes =>
@@ -35,6 +38,7 @@ class PosMenuItem {
         'price': price,
         'category': category,
         'imageBase64': imageBase64,
+        'beansG': beansG,
       };
 
   factory PosMenuItem.fromJson(Map<String, dynamic> j) => PosMenuItem(
@@ -44,6 +48,7 @@ class PosMenuItem {
         price: (j['price'] as num?)?.toInt() ?? 0,
         category: j['category'] as String? ?? 'ກາເຟ',
         imageBase64: j['imageBase64'] as String?,
+        beansG: (j['beansG'] as num?)?.toDouble() ?? 18,
       );
 }
 
@@ -61,12 +66,29 @@ class _PosScreenState extends State<PosScreen> {
   final Map<String, int> _order = {};
   List<PosMenuItem> _menu = [];
   bool _loaded = false;
+  double? _stockKg; // remaining coffee beans (kg); null = not yet loaded
 
   @override
   void initState() {
     super.initState();
     _loadMenu();
+    _loadStock();
   }
+
+  Future<void> _loadStock() async {
+    final kg = await AuthService.fetchBeanStock();
+    if (mounted) setState(() => _stockKg = kg);
+  }
+
+  // Total kg of beans this order will consume, from each item's beansG.
+  double get _orderBeansKg => _order.entries.fold(0.0, (s, e) {
+        try {
+          final item = _menu.firstWhere((m) => m.id == e.key);
+          return s + item.beansG * e.value;
+        } catch (_) {
+          return s;
+        }
+      }) / 1000.0;
 
   Future<void> _loadMenu() async {
     final prefs = await SharedPreferences.getInstance();
@@ -124,6 +146,8 @@ class _PosScreenState extends State<PosScreen> {
     final priceCtrl = TextEditingController(
         text: editing != null ? editing.price.toString() : '');
     final catCtrl   = TextEditingController(text: editing?.category ?? 'ກາເຟ');
+    final beansCtrl = TextEditingController(
+        text: (editing?.beansG ?? 18).toStringAsFixed(0));
     final formKey   = GlobalKey<FormState>();
     Uint8List? pickedBytes = editing?.imageBytes;
 
@@ -237,6 +261,13 @@ class _PosScreenState extends State<PosScreen> {
                   ),
                   const SizedBox(height: 10),
                   _Field(ctrl: catCtrl, label: 'ໝວດ', hint: 'ກາເຟ'),
+                  const SizedBox(height: 10),
+                  _Field(
+                    ctrl: beansCtrl,
+                    label: 'ເມັດກາເຟ/ແກ້ວ (ກຣາມ)',
+                    hint: '18',
+                    type: TextInputType.number,
+                  ),
                 ],
               ),
             ),
@@ -260,18 +291,22 @@ class _PosScreenState extends State<PosScreen> {
                 final price = int.parse(priceCtrl.text.replaceAll(',', '').trim());
                 final emoji = emojiCtrl.text.trim().isEmpty ? '☕' : emojiCtrl.text.trim();
                 final cat   = catCtrl.text.trim().isEmpty ? 'ກາເຟ' : catCtrl.text.trim();
+                final beansG = double.tryParse(
+                        beansCtrl.text.replaceAll(',', '').trim()) ??
+                    18;
                 final imgB64 = pickedBytes != null ? base64Encode(pickedBytes!) : null;
 
                 setState(() {
                   if (editing == null) {
                     _menu.add(PosMenuItem(
                         emoji: emoji, name: name, price: price,
-                        category: cat, imageBase64: imgB64));
+                        category: cat, imageBase64: imgB64, beansG: beansG));
                   } else {
                     editing.emoji       = emoji;
                     editing.name        = name;
                     editing.price       = price;
                     editing.category    = cat;
+                    editing.beansG      = beansG;
                     editing.imageBase64 = imgB64 ?? editing.imageBase64;
                   }
                 });
@@ -378,6 +413,8 @@ class _PosScreenState extends State<PosScreen> {
               children: [
                 Column(
                   children: [
+                    // ── Bean stock banner ──────────────────────────────────
+                    _StockBanner(stockKg: _stockKg, orderKg: _orderBeansKg),
                     // ── Category tabs ──────────────────────────────────────
                     SizedBox(
                       height: 40,
@@ -541,14 +578,38 @@ class _PosScreenState extends State<PosScreen> {
         order: Map.from(_order),
         menu: _menu,
         fmt: _fmt,
-        onConfirm: () {
-          setState(() => _order.clear());
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('ຮັບເງິນສຳເລັດ! ✓',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            backgroundColor: FilbyColors.success,
-          ));
+        onConfirm: () async {
+          final beansKg = _orderBeansKg;
+          Navigator.pop(context); // close the checkout sheet
+          final result = await AuthService.posSale(beansKg);
+          if (!mounted) return;
+          setState(() {
+            _order.clear();
+            if (result != null) _stockKg = result.balanceKg;
+          });
+          final SnackBar snack;
+          if (result == null) {
+            snack = const SnackBar(
+              content: Text('ຮັບເງິນສຳເລັດ! ✓ (ອັບເດດສະຕັອກບໍ່ໄດ້)',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              backgroundColor: Color(0xFFF59E0B),
+            );
+          } else if (result.insufficient) {
+            snack = SnackBar(
+              content: Text(
+                  'ຮັບເງິນສຳເລັດ! ⚠️ ເມັດກາເຟບໍ່ພໍ — ເຫຼືອ ${result.balanceKg.toStringAsFixed(1)} kg',
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              backgroundColor: const Color(0xFFEF4444),
+            );
+          } else {
+            snack = SnackBar(
+              content: Text(
+                  'ຮັບເງິນສຳເລັດ! ✓ ເມັດກາເຟເຫຼືອ ${result.balanceKg.toStringAsFixed(1)} kg',
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              backgroundColor: FilbyColors.success,
+            );
+          }
+          ScaffoldMessenger.of(context).showSnackBar(snack);
         },
         onQtyChange: (id, qty) => setState(() {
           if (qty <= 0) _order.remove(id);
@@ -684,6 +745,60 @@ class _MenuTile extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bean stock banner ─────────────────────────────────────────────────────────
+
+class _StockBanner extends StatelessWidget {
+  final double? stockKg;   // remaining beans in kg (null = loading)
+  final double orderKg;    // beans the current order will consume (kg)
+  const _StockBanner({required this.stockKg, required this.orderKg});
+
+  @override
+  Widget build(BuildContext context) {
+    final kg = stockKg;
+    final low = kg != null && kg <= 1.0;
+    final after = (kg ?? 0) - orderKg;
+    final Color accent =
+        kg == null ? FilbyColors.textMuted : (low ? const Color(0xFFEF4444) : FilbyColors.primary);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: FilbyColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(low ? Icons.warning_amber_rounded : Icons.coffee_rounded,
+              size: 18, color: accent),
+          const SizedBox(width: 8),
+          const Text('ເມັດກາເຟເຫຼືອ',
+              style: TextStyle(fontSize: 12, color: FilbyColors.textSecondary)),
+          const Spacer(),
+          if (kg == null)
+            const SizedBox(
+              width: 14, height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: FilbyColors.textMuted),
+            )
+          else ...[
+            Text('${kg.toStringAsFixed(1)} kg',
+                style: TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w800, color: accent)),
+            if (orderKg > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Text('→ ${after.toStringAsFixed(1)} kg',
+                    style: const TextStyle(
+                        fontSize: 12, color: FilbyColors.textMuted)),
+              ),
+          ],
         ],
       ),
     );

@@ -11,6 +11,7 @@ from ..database import get_db
 from ..core.deps import get_current_user
 from ..models.admin import Admin
 from ..models.shop import Shop
+from ..models.shop_owner import ShopOwner
 from ..models.credit_application import CreditApplication
 from ..models.bean_order import BeanOrder
 
@@ -45,3 +46,22 @@ def get_stats(
         "orders_today":    orders_today,
         "revenue_today":   float(revenue_today),
     }
+
+
+@router.get("/bean-stock")
+def bean_stock(
+    db:           Session = Depends(get_db),
+    current_user: Admin   = Depends(get_current_user),
+):
+    """Remaining coffee-bean stock (kg) for every shop owner, highest-need first."""
+    owners = db.query(ShopOwner).order_by(ShopOwner.bean_balance_kg.asc()).all()
+    return [
+        {
+            "owner_id":        o.id,
+            "shop_name":       o.shop_name,
+            "email":           o.email,
+            "phone":           o.phone,
+            "bean_balance_kg": float(o.bean_balance_kg or 0),
+        }
+        for o in owners
+    ]

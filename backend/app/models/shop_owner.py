@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from ..database import Base
@@ -14,4 +14,6 @@ class ShopOwner(Base):
     phone     = Column(String(30), nullable=True)
     address   = Column(String(500), nullable=True)
     active    = Column(Boolean, default=True)
+    # Remaining coffee-bean stock for this shop, in kilograms.
+    bean_balance_kg = Column(Float, default=0, nullable=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

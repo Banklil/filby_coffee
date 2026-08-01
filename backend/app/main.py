@@ -57,6 +57,8 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)",
                 "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS phone VARCHAR(50)",
                 "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS delivery_address VARCHAR(500)",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS bean_balance_kg DOUBLE PRECISION DEFAULT 0",
+                "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS stock_credited BOOLEAN DEFAULT FALSE",
             ]:
                 conn.execute(text(stmt))
             conn.commit()

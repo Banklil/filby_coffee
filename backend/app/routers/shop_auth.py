@@ -41,6 +41,7 @@ class OwnerOut(BaseModel):
     shop_name: str = "ຮ້ານຂອງຂ້ອຍ"
     phone: Optional[str] = None
     address: Optional[str] = None
+    bean_balance_kg: float = 0
 
     class Config:
         from_attributes = True
@@ -201,3 +202,42 @@ def get_products(
     if category:
         q = q.filter(Product.category == category)
     return q.order_by(Product.category, Product.name).all()
+
+
+# ---- Bean stock (remaining coffee, in kilograms) ----
+
+class StockOut(BaseModel):
+    bean_balance_kg: float
+
+
+@router.get("/stock", response_model=StockOut)
+def get_stock(owner: ShopOwner = Depends(_get_owner)):
+    return StockOut(bean_balance_kg=float(owner.bean_balance_kg or 0))
+
+
+class PosSaleRequest(BaseModel):
+    beans_kg: float  # total coffee beans consumed by this sale, in kg
+
+
+class PosSaleResult(BaseModel):
+    bean_balance_kg: float
+    deducted_kg: float
+    insufficient: bool = False
+
+
+@router.post("/pos-sale", response_model=PosSaleResult)
+def pos_sale(body: PosSaleRequest, owner: ShopOwner = Depends(_get_owner), db: Session = Depends(get_db)):
+    """Deduct beans from the shop's stock when a POS sale is completed.
+    Balance is floored at 0; `insufficient` flags when the sale exceeded stock."""
+    want = max(0.0, float(body.beans_kg or 0))
+    current = float(owner.bean_balance_kg or 0)
+    insufficient = want > current
+    deducted = min(want, current)
+    owner.bean_balance_kg = round(current - deducted, 4)
+    db.commit()
+    db.refresh(owner)
+    return PosSaleResult(
+        bean_balance_kg=float(owner.bean_balance_kg or 0),
+        deducted_kg=deducted,
+        insufficient=insufficient,
+    )

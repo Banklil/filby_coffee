@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, Text
 from sqlalchemy.sql import func
 from ..database import Base
 
@@ -15,6 +15,8 @@ class BeanOrder(Base):
     unit_price   = Column(Float, nullable=False)
     total_price  = Column(Float, nullable=False)
     status          = Column(String(50), default="processing", nullable=False)
+    # True once this order's kg has been added to the shop's bean stock (on delivery).
+    stock_credited  = Column(Boolean, default=False, nullable=False, server_default="false")
     payment_method  = Column(String(20), nullable=True)
     phone           = Column(String(50), nullable=True)
     delivery_address= Column(String(500), nullable=True)
