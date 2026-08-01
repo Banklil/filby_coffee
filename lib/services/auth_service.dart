@@ -244,6 +244,25 @@ class AuthService {
     }
   }
 
+  /// Sales history: per-menu totals (`by_item`) + recent transactions (`recent`).
+  /// [period] is "day", "week", "month", or "all". Null on failure.
+  static Future<Map<String, dynamic>?> fetchSales(String period) async {
+    final token = await _getToken();
+    if (token == null) return null;
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/shop/sales?period=$period'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 30));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<void> signOut() async {
     await _clearToken();
   }

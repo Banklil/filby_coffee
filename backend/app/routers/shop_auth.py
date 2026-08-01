@@ -333,3 +333,58 @@ def shop_summary(
         "weekly":          weekly,
         "top_items":       top_items,
     }
+
+
+@router.get("/sales")
+def shop_sales(
+    period: str = "month",  # "day" | "week" | "month" | "all"
+    owner: ShopOwner = Depends(_get_owner),
+    db: Session = Depends(get_db),
+):
+    """Sales history for the shop: per-menu totals + recent transactions."""
+    from datetime import date, timedelta
+    from sqlalchemy import func as _f
+    from ..models.pos_sale import PosSale
+
+    today = date.today()
+    if period == "day":
+        start = today
+    elif period == "week":
+        start = today - timedelta(days=6)
+    elif period == "all":
+        start = None
+    else:
+        start = today.replace(day=1)
+
+    q = db.query(PosSale).filter(PosSale.owner_id == owner.id)
+    if start is not None:
+        q = q.filter(_f.date(PosSale.created_at) >= start)
+    sales = q.order_by(PosSale.created_at.desc()).all()
+
+    # ── Per-menu aggregation across all sales in the period ──────────────
+    by_item: dict = {}
+    for s in sales:
+        for it in (s.items or []):
+            if not isinstance(it, dict):
+                continue
+            name = it.get("name") or "—"
+            qty = float(it.get("qty") or 0)
+            revenue = float(it.get("price") or 0) * qty
+            row = by_item.setdefault(name, {"name": name, "qty": 0.0, "revenue": 0.0, "count": 0})
+            row["qty"] += qty
+            row["revenue"] += revenue
+            row["count"] += 1
+    by_item_list = sorted(by_item.values(), key=lambda r: r["revenue"], reverse=True)
+
+    recent = [
+        {
+            "id":         s.id,
+            "amount":     float(s.amount or 0),
+            "beans_kg":   float(s.beans_kg or 0),
+            "items":      s.items or [],
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        }
+        for s in sales[:100]
+    ]
+
+    return {"period": period, "by_item": by_item_list, "recent": recent}

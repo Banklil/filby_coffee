@@ -4,6 +4,7 @@ import '../theme.dart';
 import '../services/auth_service.dart';
 import 'pos_screen.dart';
 import 'credit_screen.dart';
+import 'sales_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -159,7 +160,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        const Expanded(child: _QuickTile(label: 'ສະຫຼຸບ', icon: Icons.bar_chart_outlined)),
+        Expanded(
+          child: _QuickTile(
+            label: 'ສະຫຼຸບ',
+            icon: Icons.bar_chart_outlined,
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const SalesHistoryScreen())),
+          ),
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: _QuickTile(
