@@ -57,49 +57,47 @@ class _MainNavState extends State<MainNav> {
         children: _screens,
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xEB0E0703),
-          border: Border(
-            top: BorderSide(color: FilbyColors.border, width: 1),
-          ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: const Border(top: BorderSide(color: FilbyColors.border, width: 1)),
+          boxShadow: [
+            BoxShadow(color: FilbyColors.navy.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, -4)),
+          ],
         ),
         child: SafeArea(
+          top: false,
           child: SizedBox(
-            height: 60,
+            height: 66,
             child: Row(
               children: [
                 _NavItem(
                   icon: Icons.home_outlined,
-                  activeIcon: Icons.home,
+                  activeIcon: Icons.home_rounded,
                   label: 'ໜ້າຫຼັກ',
                   isActive: _currentIndex == 0,
                   onTap: () => _select(0),
                 ),
                 _NavItem(
                   icon: Icons.inventory_2_outlined,
-                  activeIcon: Icons.inventory_2,
+                  activeIcon: Icons.inventory_2_rounded,
                   label: 'ສິນຄ້າ',
                   isActive: _currentIndex == 1,
                   onTap: () => _select(1),
                 ),
-                _NavItem(
-                  icon: Icons.shopping_cart_outlined,
-                  activeIcon: Icons.shopping_cart,
-                  label: 'ສັ່ງຊື້',
-                  isActive: _currentIndex == 2,
+                _CenterFab(
                   badge: CartManager.instance.count > 0 ? CartManager.instance.count : null,
                   onTap: () => _select(2),
                 ),
                 _NavItem(
                   icon: Icons.bar_chart_outlined,
-                  activeIcon: Icons.bar_chart,
+                  activeIcon: Icons.bar_chart_rounded,
                   label: 'ລາຍງານ',
                   isActive: _currentIndex == 3,
                   onTap: () => _select(3),
                 ),
                 _NavItem(
                   icon: Icons.person_outline,
-                  activeIcon: Icons.person,
+                  activeIcon: Icons.person_rounded,
                   label: 'ບັນຊີ',
                   isActive: _currentIndex == 4,
                   onTap: () => _select(4),
@@ -132,6 +130,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = isActive ? FilbyColors.primary : FilbyColors.textMuted;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -139,47 +138,78 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Stack(
+            Icon(isActive ? activeIcon : icon, size: 23, color: color),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Elevated circular action in the center of the nav bar (cart / ສັ່ງຊື້).
+class _CenterFab extends StatelessWidget {
+  final int? badge;
+  final VoidCallback onTap;
+  const _CenterFab({required this.onTap, this.badge});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: Transform.translate(
+            offset: const Offset(0, -12),
+            child: Stack(
               clipBehavior: Clip.none,
+              alignment: Alignment.center,
               children: [
-                Icon(
-                  isActive ? activeIcon : icon,
-                  size: 22,
-                  color: isActive ? FilbyColors.primary : FilbyColors.textMuted,
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [FilbyColors.gold, FilbyColors.goldSoft],
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: FilbyColors.gold.withOpacity(0.45),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.shopping_cart_rounded, size: 24, color: FilbyColors.navy),
                 ),
                 if (badge != null)
                   Positioned(
-                    top: -4,
-                    right: -8,
+                    top: -2,
+                    right: -2,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
-                        color: FilbyColors.primary,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: FilbyColors.bg, width: 1.5),
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
-                      child: Text(
-                        '$badge',
-                        style: const TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: Text('$badge',
+                          style: const TextStyle(
+                              fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white)),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                color: isActive ? FilbyColors.primary : FilbyColors.textMuted,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

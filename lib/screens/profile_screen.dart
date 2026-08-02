@@ -103,16 +103,16 @@ class ProfileScreen extends StatelessWidget {
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('ສິນເຊື່ອທີ່ໃຊ້ໄດ້', style: TextStyle(fontSize: 11, color: Color(0x8C140A05))),
-                      Text('30 ວັນ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: FilbyColors.primaryDeep)),
+                      Text('ສິນເຊື່ອທີ່ໃຊ້ໄດ້', style: TextStyle(fontSize: 11, color: Colors.white70)),
+                      Text('30 ວັນ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: FilbyColors.goldSoft)),
                     ],
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     '—',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: FilbyColors.bg, letterSpacing: -0.5),
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5),
                   ),
-                  const Text('ກີບ · ຕິດຕໍ່ admin ເພື່ອເປີດສິນເຊື່ອ', style: TextStyle(fontSize: 11, color: Color(0x8C140A05))),
+                  const Text('ກີບ · ຕິດຕໍ່ admin ເພື່ອເປີດສິນເຊື່ອ', style: TextStyle(fontSize: 11, color: Colors.white70)),
                 ],
               ),
             ),
