@@ -88,6 +88,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 children: [
                   Row(
                     children: [
+                      if (Navigator.canPop(context)) ...[
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: 36, height: 36,
+                            margin: const EdgeInsets.only(right: 10),
+                            decoration: BoxDecoration(
+                              color: FilbyColors.surface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: FilbyColors.border),
+                            ),
+                            child: const Icon(Icons.chevron_left, color: FilbyColors.textPrimary),
+                          ),
+                        ),
+                      ],
                       Text(
                         'ສິນຄ້າທັງໝົດ',
                         style: GoogleFonts.notoSerifLao(

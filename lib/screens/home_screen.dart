@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import 'pos_screen.dart';
 import 'credit_screen.dart';
+import 'products_screen.dart';
 import 'sales_history_screen.dart';
 
 // ── Filby Coffee palette (from logo): deep navy + gold on light ──────────────
@@ -217,8 +218,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: 'ສັ່ງເມັດ',
                   icon: Icons.local_shipping_outlined,
                   filled: false,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CreditScreen())),
+                  onTap: () async {
+                    await Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const ProductsScreen()));
+                    _load();
+                  },
                 ),
               ),
             ],
