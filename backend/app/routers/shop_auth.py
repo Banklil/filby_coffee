@@ -107,6 +107,27 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Server error: {type(e).__name__}")
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(body: RefreshRequest, db: Session = Depends(get_db)):
+    """Exchange a valid refresh token for a fresh access token (+ rotated refresh)."""
+    payload = decode_token(body.refresh_token)
+    if not payload or payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Refresh token ບໍ່ຖືກຕ້ອງ ຫຼື ໝົດອາຍຸ")
+    sub = payload.get("sub")
+    owner = db.query(ShopOwner).filter(ShopOwner.id == int(sub), ShopOwner.active == True).first() if sub else None
+    if not owner:
+        raise HTTPException(status_code=401, detail="ບໍ່ພົບບັນຊີ")
+    return TokenResponse(
+        access_token=create_access_token({"sub": str(owner.id)}),
+        refresh_token=create_refresh_token({"sub": str(owner.id)}),
+        user=OwnerOut.model_validate(owner),
+    )
+
+
 @router.get("/me", response_model=OwnerOut)
 def me(owner: ShopOwner = Depends(_get_owner)):
     return owner

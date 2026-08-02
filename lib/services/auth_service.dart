@@ -23,20 +23,73 @@ class AuthService {
   static AuthUser? _currentUser;
   static AuthUser? get currentUser => _currentUser;
 
+  /// Returns a valid access token, transparently refreshing it when the
+  /// stored one is missing or (about to be) expired, using the refresh token.
   static Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+    final token = prefs.getString('auth_token');
+    if (token != null && !_isExpired(token)) return token;
+    final ok = await _refreshAccessToken();
+    if (ok) return (await SharedPreferences.getInstance()).getString('auth_token');
+    return token; // may be null/expired → caller will surface a login prompt
   }
 
-  static Future<void> _saveToken(String token) async {
+  static Future<void> _saveToken(String token) => _saveTokens(token, null);
+
+  static Future<void> _saveTokens(String access, String? refresh) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+    await prefs.setString('auth_token', access);
+    if (refresh != null) await prefs.setString('refresh_token', refresh);
   }
 
   static Future<void> _clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove('refresh_token');
     _currentUser = null;
+  }
+
+  /// True if the JWT is expired or within 30s of expiring.
+  static bool _isExpired(String jwt) {
+    try {
+      final parts = jwt.split('.');
+      if (parts.length != 3) return false;
+      var p = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      p += '=' * ((4 - p.length % 4) % 4);
+      final map = jsonDecode(utf8.decode(base64.decode(p))) as Map<String, dynamic>;
+      final exp = map['exp'];
+      if (exp is! int) return false;
+      final expiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
+      return DateTime.now().toUtc().isAfter(expiry.subtract(const Duration(seconds: 30)));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Shared in-flight refresh so concurrent calls don't each hit /refresh.
+  static Future<bool>? _refreshFuture;
+  static Future<bool> _refreshAccessToken() =>
+      _refreshFuture ??= _doRefresh().whenComplete(() => _refreshFuture = null);
+
+  static Future<bool> _doRefresh() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final refresh = prefs.getString('refresh_token');
+      if (refresh == null) return false;
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/shop/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refresh_token': refresh}),
+      ).timeout(const Duration(seconds: 20));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        await _saveTokens(body['access_token'], body['refresh_token']);
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
   static Future<bool> isLoggedIn() async {
@@ -77,7 +130,7 @@ class AuthService {
       }
       final body = jsonDecode(res.body);
       if (res.statusCode == 200) {
-        await _saveToken(body['access_token']);
+        await _saveTokens(body['access_token'], body['refresh_token']);
         _currentUser = AuthUser.fromJson(body['user']);
         return null;
       }
@@ -98,7 +151,7 @@ class AuthService {
       ).timeout(const Duration(seconds: 90));
       final body = jsonDecode(res.body);
       if (res.statusCode == 200) {
-        await _saveToken(body['access_token']);
+        await _saveTokens(body['access_token'], body['refresh_token']);
         _currentUser = AuthUser.fromJson(body['user']);
         return null;
       }
