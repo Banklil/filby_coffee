@@ -266,6 +266,7 @@ def shop_summary(
     from datetime import date, timedelta
     from sqlalchemy import func as _f
     from ..models.pos_sale import PosSale
+    from ..models.bean_order import BeanOrder
 
     today = date.today()
     if period == "day":
