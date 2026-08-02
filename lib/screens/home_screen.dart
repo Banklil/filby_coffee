@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
@@ -16,11 +17,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _summary;
   bool _loading = true;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    // Auto-refresh so the dashboard stays close to real-time.
+    _timer = Timer.periodic(const Duration(seconds: 20), (_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -56,7 +66,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SafeArea(
-            child: ListView(
+            child: RefreshIndicator(
+              color: FilbyColors.primary,
+              onRefresh: _load,
+              child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
                 const SizedBox(height: 8),
@@ -73,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildStockCard(),
                 const SizedBox(height: 100),
               ],
+            ),
             ),
           ),
         ],

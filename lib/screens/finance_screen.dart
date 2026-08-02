@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
@@ -17,15 +18,23 @@ class _FinanceScreenState extends State<FinanceScreen> {
 
   Map<String, dynamic>? _summary;
   bool _loading = true;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _timer = Timer.periodic(const Duration(seconds: 20), (_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (_summary == null && mounted) setState(() => _loading = true);
     final s = await AuthService.fetchSummary(_periodKeys[_periodIndex]);
     if (mounted) setState(() { _summary = s; _loading = false; });
   }
@@ -102,7 +111,11 @@ class _FinanceScreenState extends State<FinanceScreen> {
     return Scaffold(
       backgroundColor: FilbyColors.bg,
       body: SafeArea(
-        child: ListView(
+        child: RefreshIndicator(
+          color: FilbyColors.primary,
+          onRefresh: _load,
+          child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
             const SizedBox(height: 16),
@@ -272,6 +285,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             ),
             const SizedBox(height: 30),
           ],
+        ),
         ),
       ),
     );
