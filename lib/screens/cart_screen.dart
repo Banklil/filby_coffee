@@ -47,9 +47,28 @@ class _CartScreenState extends State<CartScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'ຕະກ້ວາຂອງຂ້ອຍ',
-                    style: GoogleFonts.notoSerifLao(fontSize: 22, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary),
+                  Row(
+                    children: [
+                      if (Navigator.canPop(context)) ...[
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: 36, height: 36,
+                            margin: const EdgeInsets.only(right: 10),
+                            decoration: BoxDecoration(
+                              color: FilbyColors.surface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: FilbyColors.border),
+                            ),
+                            child: const Icon(Icons.chevron_left, color: FilbyColors.textPrimary),
+                          ),
+                        ),
+                      ],
+                      Text(
+                        'ຕະກ້ວາຂອງຂ້ອຍ',
+                        style: GoogleFonts.notoSerifLao(fontSize: 22, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary),
+                      ),
+                    ],
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

@@ -26,6 +26,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
   void initState() {
     super.initState();
     _loadProducts();
+    CartManager.instance.addListener(_onCartChanged);
+  }
+
+  @override
+  void dispose() {
+    CartManager.instance.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadProducts() async {
