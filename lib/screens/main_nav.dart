@@ -16,14 +16,24 @@ class MainNav extends StatefulWidget {
 
 class _MainNavState extends State<MainNav> {
   int _currentIndex = 0;
+  // Bumped when re-entering a tab to force a data refresh (IndexedStack keeps
+  // screens alive, so a new key recreates the screen → initState refetches).
+  int _homeTick = 0;
+  int _financeTick = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    ProductsScreen(),
-    CartScreen(),
-    FinanceScreen(),
-    ProfileScreen(),
-  ];
+  List<Widget> get _screens => [
+        HomeScreen(key: ValueKey('home_$_homeTick')),
+        const ProductsScreen(),
+        const CartScreen(),
+        FinanceScreen(key: ValueKey('finance_$_financeTick')),
+        const ProfileScreen(),
+      ];
+
+  void _select(int i) => setState(() {
+        _currentIndex = i;
+        if (i == 0) _homeTick++;
+        if (i == 3) _financeTick++;
+      });
 
   @override
   void initState() {
@@ -63,14 +73,14 @@ class _MainNavState extends State<MainNav> {
                   activeIcon: Icons.home,
                   label: 'ໜ້າຫຼັກ',
                   isActive: _currentIndex == 0,
-                  onTap: () => setState(() => _currentIndex = 0),
+                  onTap: () => _select(0),
                 ),
                 _NavItem(
                   icon: Icons.inventory_2_outlined,
                   activeIcon: Icons.inventory_2,
                   label: 'ສິນຄ້າ',
                   isActive: _currentIndex == 1,
-                  onTap: () => setState(() => _currentIndex = 1),
+                  onTap: () => _select(1),
                 ),
                 _NavItem(
                   icon: Icons.shopping_cart_outlined,
@@ -78,21 +88,21 @@ class _MainNavState extends State<MainNav> {
                   label: 'ສັ່ງຊື້',
                   isActive: _currentIndex == 2,
                   badge: CartManager.instance.count > 0 ? CartManager.instance.count : null,
-                  onTap: () => setState(() => _currentIndex = 2),
+                  onTap: () => _select(2),
                 ),
                 _NavItem(
                   icon: Icons.bar_chart_outlined,
                   activeIcon: Icons.bar_chart,
                   label: 'ລາຍງານ',
                   isActive: _currentIndex == 3,
-                  onTap: () => setState(() => _currentIndex = 3),
+                  onTap: () => _select(3),
                 ),
                 _NavItem(
                   icon: Icons.person_outline,
                   activeIcon: Icons.person,
                   label: 'ບັນຊີ',
                   isActive: _currentIndex == 4,
-                  onTap: () => setState(() => _currentIndex = 4),
+                  onTap: () => _select(4),
                 ),
               ],
             ),

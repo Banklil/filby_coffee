@@ -156,7 +156,11 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'POS',
             icon: Icons.point_of_sale,
             featured: true,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PosScreen())),
+            onTap: () async {
+              await Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const PosScreen()));
+              _load(); // refresh income / stock after selling
+            },
           ),
         ),
         const SizedBox(width: 8),
@@ -215,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(fontSize: 11, color: FilbyColors.textSecondary)),
                 const SizedBox(height: 2),
                 Text(
-                  _loading ? '…' : (kg == null ? '—' : '${kg.toStringAsFixed(1)} kg'),
+                  _loading ? '…' : (kg == null ? '—' : '${kg.toStringAsFixed(2)} kg'),
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w800, color: accent),
                 ),

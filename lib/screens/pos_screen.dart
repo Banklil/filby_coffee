@@ -613,14 +613,14 @@ class _PosScreenState extends State<PosScreen> {
           } else if (result.insufficient) {
             snack = SnackBar(
               content: Text(
-                  'ຮັບເງິນສຳເລັດ! ⚠️ ເມັດກາເຟບໍ່ພໍ — ເຫຼືອ ${result.balanceKg.toStringAsFixed(1)} kg',
+                  'ຮັບເງິນສຳເລັດ! ⚠️ ເມັດກາເຟບໍ່ພໍ — ເຫຼືອ ${result.balanceKg.toStringAsFixed(2)} kg',
                   style: const TextStyle(fontWeight: FontWeight.w700)),
               backgroundColor: const Color(0xFFEF4444),
             );
           } else {
             snack = SnackBar(
               content: Text(
-                  'ຮັບເງິນສຳເລັດ! ✓ ເມັດກາເຟເຫຼືອ ${result.balanceKg.toStringAsFixed(1)} kg',
+                  'ຮັບເງິນສຳເລັດ! ✓ ເມັດກາເຟເຫຼືອ ${result.balanceKg.toStringAsFixed(2)} kg',
                   style: const TextStyle(fontWeight: FontWeight.w700)),
               backgroundColor: FilbyColors.success,
             );
@@ -804,13 +804,13 @@ class _StockBanner extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2, color: FilbyColors.textMuted),
             )
           else ...[
-            Text('${kg.toStringAsFixed(1)} kg',
+            Text('${kg.toStringAsFixed(2)} kg',
                 style: TextStyle(
                     fontSize: 15, fontWeight: FontWeight.w800, color: accent)),
             if (orderKg > 0)
               Padding(
                 padding: const EdgeInsets.only(left: 6),
-                child: Text('→ ${after.toStringAsFixed(1)} kg',
+                child: Text('→ ${after.toStringAsFixed(2)} kg',
                     style: const TextStyle(
                         fontSize: 12, color: FilbyColors.textMuted)),
               ),
