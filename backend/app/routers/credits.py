@@ -1,4 +1,5 @@
 import os
+import secrets
 from datetime import timedelta
 from typing import Optional
 
@@ -298,10 +299,13 @@ def run_daily_job(
     ຢືນຢັນຕົວດ້ວຍ header X-Cron-Secret ທຽບກັບ env CRON_SECRET.
     ຖ້າບໍ່ໄດ້ຕັ້ງ CRON_SECRET ໄວ້ endpoint ນີ້ຈະປິດຢູ່.
     """
-    expected = os.getenv("CRON_SECRET")
+    # .strip() ຍ້ອນການວາງຄ່າໃສ່ໜ້າຈໍ Railway ມັກຕິດ newline ມານຳ ເຊິ່ງເຮັດໃຫ້
+    # secret ທີ່ຖືກຕ້ອງຜ່ານບໍ່ໄດ້ ແລະ ຫາສາເຫດຍາກຫຼາຍ.
+    expected = (os.getenv("CRON_SECRET") or "").strip()
     if not expected:
         raise HTTPException(status_code=503, detail="ຍັງບໍ່ໄດ້ຕັ້ງ CRON_SECRET")
-    if x_cron_secret != expected:
+    # compare_digest ກັນການເດົາ secret ດ້ວຍການວັດເວລາຕອບ
+    if not secrets.compare_digest((x_cron_secret or "").strip(), expected):
         raise HTTPException(status_code=401, detail="ບໍ່ໄດ້ຮັບອະນຸຍາດ")
 
     from ..jobs.credit_daily import run_daily
