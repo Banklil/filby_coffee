@@ -8,6 +8,7 @@ from ..core.deps import get_current_user, require_roles
 from ..models.admin import Admin
 from ..models.order import Order
 from ..models.audit_log import AuditLog
+from ..core import credit
 from ..schemas.order import OrderOut, OrderStatusUpdate, OrderCancelRequest, OrderListResponse
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -64,6 +65,13 @@ def update_order_status(
         except Exception as _e:
             print(f"[WARN] bean stock credit: {_e}")
 
+        # ຈຸດທີ່ວົງເງິນທີ່ຈອງໄວ້ກາຍເປັນໜີ້ຈິງ ແລະ ນາຬິກາ 30 ມື້ເລີ່ມເດີນ.
+        # ບໍ່ຫຸ້ມ try/except — ຖ້າບັນທຶກໜີ້ບໍ່ໄດ້ ຫ້າມໝາຍວ່າສົ່ງເຄື່ອງແລ້ວ.
+        credit.capture_for_order(db, order, admin_id=current_user.id)
+
+    elif data.status == "cancelled":
+        credit.release_for_order(db, order.id, reason="ຍົກເລີກໂດຍຝ່າຍບໍລິຫານ")
+
     db.commit()
     return {"message": "ອັບເດດສະຖານະສຳເລັດ"}
 
@@ -105,6 +113,7 @@ def cancel_order(
     if order.status in ("delivered", "cancelled"):
         raise HTTPException(status_code=400, detail="ບໍ່ສາມາດຍົກເລີກຄຳສັ່ງຊື້ນີ້ໄດ້")
     order.status = "cancelled"
+    credit.release_for_order(db, order.id, reason=data.reason or "ຍົກເລີກຄຳສັ່ງຊື້")
     db.add(AuditLog(admin_id=current_user.id, action="order.cancel", entity_type="order", entity_id=order_id, log_metadata={"reason": data.reason}))
     db.commit()
     return {"message": "ຍົກເລີກຄຳສັ່ງຊື້ແລ້ວ"}

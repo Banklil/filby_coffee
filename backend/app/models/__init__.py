@@ -11,3 +11,4 @@ from .finance import FinanceEntry
 from .bean_order import BeanOrder
 from .credit_application import CreditApplication
 from .pos_sale import PosSale
+from .credit import CreditLedger, CreditHold, DepositMovement

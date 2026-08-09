@@ -59,6 +59,23 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS delivery_address VARCHAR(500)",
                 "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS bean_balance_kg DOUBLE PRECISION DEFAULT 0",
                 "ALTER TABLE bean_orders_merchant ADD COLUMN IF NOT EXISTS stock_credited BOOLEAN DEFAULT FALSE",
+                # ── ລະບົບສິນເຊື່ອ: ມັດຈຳ, ສະຖານະ, ເງື່ອນໄຂຊຳລະ ──────────
+                "ALTER TABLE shops ADD COLUMN IF NOT EXISTS owner_id INTEGER",
+                "ALTER TABLE shops ADD COLUMN IF NOT EXISTS deposit_balance BIGINT NOT NULL DEFAULT 0",
+                "ALTER TABLE shops ADD COLUMN IF NOT EXISTS credit_status VARCHAR(16) NOT NULL DEFAULT 'good'",
+                "ALTER TABLE shops ADD COLUMN IF NOT EXISTS net_terms_days INTEGER NOT NULL DEFAULT 30",
+                "ALTER TABLE shops ADD COLUMN IF NOT EXISTS unsecured_allowance BIGINT NOT NULL DEFAULT 0",
+                "ALTER TABLE shops ADD COLUMN IF NOT EXISTS deposit_multiplier INTEGER NOT NULL DEFAULT 2",
+                "ALTER TABLE shops ADD COLUMN IF NOT EXISTS last_review_at TIMESTAMPTZ",
+                "CREATE INDEX IF NOT EXISTS ix_shops_owner_id ON shops (owner_id)",
+                # ── Backfill ຄັ້ງດຽວ ──────────────────────────────────────
+                # ຮ້ານທີ່ມີວົງເງິນຢູ່ກ່ອນລະບົບມັດຈຳ ຍັງບໍ່ໄດ້ວາງມັດຈຳ. ຖ້າປ່ອຍໄວ້
+                # effective_limit ຈະກາຍເປັນ 0 ແລ້ວສັ່ງເຄື່ອງບໍ່ໄດ້ທັນທີ. ຈຶ່ງໃຫ້
+                # unsecured_allowance ເທົ່າກັບວົງເງິນເດີມ — ພຶດຕິກຳຄືເກົ່າ ແຕ່
+                # ດຽວນີ້ວົງເງິນຖືກບັງຄັບໃຊ້ຈິງ. last_review_at ກັນບໍ່ໃຫ້ແລ່ນຊ້ຳ
+                # ແລະ ບໍ່ໃຫ້ລົບລ້າງຄ່າທີ່ຝ່າຍບໍລິຫານປັບດ້ວຍມືພາຍຫຼັງ.
+                "UPDATE shops SET unsecured_allowance = credit_limit, last_review_at = NOW() "
+                "WHERE last_review_at IS NULL AND credit_limit > 0",
             ]:
                 conn.execute(text(stmt))
             conn.commit()
