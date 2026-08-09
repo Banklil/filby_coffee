@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../theme.dart';
 import '../services/auth_service.dart';
+import '../widgets/credit_terms.dart';
 
 enum _CreditState { loading, noApp, pending, approved, rejected }
 
@@ -27,6 +28,7 @@ class _CreditScreenState extends State<CreditScreen> {
   double _amount      = 1000000;
   String _purpose     = 'ຊື້ໝັ້ນກາເຟ';
   bool _submitting    = false;
+  bool _agreedToTerms = false;
 
   final List<String> _purposes = ['ຊື້ໝັ້ນກາເຟ', 'ອຸປະກອນ', 'ຮ້ານ', 'ອື່ນໆ'];
 
@@ -89,6 +91,13 @@ class _CreditScreenState extends State<CreditScreen> {
 
   Future<void> _submitApplication() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('ກະລຸນາອ່ານ ແລະ ຍອມຮັບເງື່ອນໄຂກ່ອນສົ່ງຄຳຂໍ'),
+        backgroundColor: FilbyColors.navy,
+      ));
+      return;
+    }
     setState(() => _submitting = true);
     try {
       final headers = await AuthService.authHeaders();
@@ -196,8 +205,8 @@ class _CreditScreenState extends State<CreditScreen> {
                 Text('ສະໝັກສິນເຊື່ອ',
                   style: GoogleFonts.notoSerifLao(fontSize: 20, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
                 const SizedBox(height: 4),
-                const Text('ກວດສອບ 1-3 ວັນທຳການ · ບໍ່ມີດອກເບ້ຍ 30 ວັນ',
-                  style: TextStyle(fontSize: 12, color: FilbyColors.textMuted)),
+                Text('ກວດສອບ 1-3 ວັນທຳການ · ບໍ່ມີດອກເບ້ຍ ${CreditPolicy.graceDays} ວັນ',
+                  style: const TextStyle(fontSize: 12, color: FilbyColors.textMuted)),
               ],
             ),
           ),
@@ -263,6 +272,12 @@ class _CreditScreenState extends State<CreditScreen> {
           ),
 
           const SizedBox(height: 28),
+          CreditTermsCard(exampleAmount: _amount),
+
+          const SizedBox(height: 16),
+          _agreeCheckbox(),
+
+          const SizedBox(height: 20),
           SizedBox(
             height: 52,
             child: ElevatedButton(
@@ -280,6 +295,65 @@ class _CreditScreenState extends State<CreditScreen> {
             ),
           ),
           const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _agreeCheckbox() {
+    return GestureDetector(
+      onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 22,
+            height: 22,
+            margin: const EdgeInsets.only(top: 1),
+            decoration: BoxDecoration(
+              color: _agreedToTerms ? FilbyColors.primary : FilbyColors.surface,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: _agreedToTerms
+                    ? FilbyColors.primary
+                    : FilbyColors.borderStrong,
+                width: 1.5,
+              ),
+            ),
+            child: _agreedToTerms
+                ? const Icon(Icons.check, size: 15, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                style: GoogleFonts.notoSansLao(
+                  fontSize: 12.5,
+                  height: 1.5,
+                  color: FilbyColors.textSecondary,
+                ),
+                children: [
+                  const TextSpan(text: 'ຂ້າພະເຈົ້າໄດ້ອ່ານ ແລະ ຍອມຮັບ '),
+                  TextSpan(
+                    text: 'ເງື່ອນໄຂການໃຊ້ສິນເຊື່ອ',
+                    style: const TextStyle(
+                      color: FilbyColors.primary,
+                      fontWeight: FontWeight.w700,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  TextSpan(
+                    text:
+                        ' ລວມທັງການຄິດດອກເບ້ຍ ${CreditPolicy.monthlyLabel} ຕໍ່ເດືອນ '
+                        'ຖ້າຊຳລະຊ້າກວ່າ ${CreditPolicy.graceDays} ມື້',
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -400,8 +474,8 @@ class _CreditScreenState extends State<CreditScreen> {
               const SizedBox(height: 12),
               Text(_fmt(amount),
                 style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5)),
-              const Text('ວົງເງິນສິນເຊື່ອ · ຊຳລະພາຍໃນ 30 ວັນ',
-                style: TextStyle(fontSize: 11, color: Colors.white70)),
+              Text('ວົງເງິນສິນເຊື່ອ · ຊຳລະພາຍໃນ ${CreditPolicy.graceDays} ວັນ ບໍ່ມີດອກເບ້ຍ',
+                style: const TextStyle(fontSize: 11, color: Colors.white70)),
             ],
           ),
         ),
@@ -413,17 +487,22 @@ class _CreditScreenState extends State<CreditScreen> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: FilbyColors.border),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ສິດທິປະໂຫຍດ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
-              SizedBox(height: 10),
-              _BenefitRow(icon: Icons.check_circle, text: 'ສ່ງ order ໄດ້ທັນທີ'),
-              _BenefitRow(icon: Icons.check_circle, text: 'ຊຳລະພາຍໃນ 30 ວັນ ບໍ່ມີດອກເບ້ຍ'),
-              _BenefitRow(icon: Icons.check_circle, text: 'ສາມາດ top-up ວົງເງິນໄດ້'),
+              const Text('ສິດທິປະໂຫຍດ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: FilbyColors.textPrimary)),
+              const SizedBox(height: 10),
+              const _BenefitRow(icon: Icons.check_circle, text: 'ສ່ງ order ໄດ້ທັນທີ'),
+              _BenefitRow(
+                icon: Icons.check_circle,
+                text: 'ຊຳລະພາຍໃນ ${CreditPolicy.graceDays} ວັນ ບໍ່ມີດອກເບ້ຍ',
+              ),
+              const _BenefitRow(icon: Icons.check_circle, text: 'ສາມາດ top-up ວົງເງິນໄດ້'),
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        CreditTermsCard(exampleAmount: amount > 0 ? amount : 2000000),
         const SizedBox(height: 40),
       ],
     );
