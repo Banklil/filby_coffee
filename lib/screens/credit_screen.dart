@@ -6,10 +6,12 @@ import '../theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/credit_terms.dart';
 
-enum _CreditState { loading, noApp, pending, approved, rejected }
+enum _CreditState { loading, noApp, pending, approved, rejected, active }
 
 class CreditScreen extends StatefulWidget {
-  const CreditScreen({super.key});
+  /// ເມື່ອຢູ່ໃນແທັບຂອງເມນູລຸ່ມ ບໍ່ມີໜ້າໃຫ້ຖອຍກັບ ຈຶ່ງເຊື່ອງປຸ່ມຍ້ອນກັບ.
+  final bool embedded;
+  const CreditScreen({super.key, this.embedded = false});
   @override
   State<CreditScreen> createState() => _CreditScreenState();
 }
@@ -17,6 +19,7 @@ class CreditScreen extends StatefulWidget {
 class _CreditScreenState extends State<CreditScreen> {
   _CreditState _state = _CreditState.loading;
   Map<String, dynamic>? _application;
+  Map<String, dynamic>? _credit;   // ຈາກ /api/credits/me
 
   // Apply form
   final _formKey = GlobalKey<FormState>();
@@ -55,8 +58,41 @@ class _CreditScreenState extends State<CreditScreen> {
     return buf.toString();
   }
 
+  /// ວົງເງິນຈິງມາຈາກ /api/credits/me — ບໍ່ແມ່ນຈາກໃບສະໝັກ. ຮ້ານອາດໄດ້ຮັບວົງເງິນ
+  /// ຈາກຝ່າຍບໍລິຫານໂດຍກົງ ໂດຍບໍ່ມີໃບສະໝັກໃນລະບົບ.
+  Future<void> _loadCredit() async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.get(
+        Uri.parse('${AuthService.baseUrl}/api/credits/me'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 20));
+      if (res.statusCode == 200) {
+        _credit = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      }
+    } catch (_) {
+      // ບໍ່ເປັນຫຍັງ — ຄ່ອຍໄປສະແດງຕາມສະຖານະໃບສະໝັກແທນ
+    }
+  }
+
+  bool get _hasFacility {
+    final c = _credit;
+    if (c == null) return false;
+    return (c['effective_limit'] as num? ?? 0) > 0 ||
+           (c['balance'] as num? ?? 0) > 0 ||
+           (c['held'] as num? ?? 0) > 0;
+  }
+
   Future<void> _loadStatus() async {
     setState(() => _state = _CreditState.loading);
+    await _loadCredit();
+
+    // ມີວົງເງິນ ຫຼື ມີໜີ້ຢູ່ແລ້ວ → ສະແດງບັນຊີ ບໍ່ຕ້ອງສົນໃຈໃບສະໝັກ
+    if (_hasFacility) {
+      if (mounted) setState(() => _state = _CreditState.active);
+      return;
+    }
+
     try {
       final headers = await AuthService.authHeaders();
       final res = await http.get(
@@ -138,18 +174,21 @@ class _CreditScreenState extends State<CreditScreen> {
       backgroundColor: FilbyColors.bg,
       appBar: AppBar(
         backgroundColor: FilbyColors.bg,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            margin: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: FilbyColors.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: FilbyColors.border),
-            ),
-            child: const Icon(Icons.chevron_left, color: FilbyColors.textPrimary),
-          ),
-        ),
+        automaticallyImplyLeading: false,
+        leading: widget.embedded
+            ? null
+            : GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  margin: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: FilbyColors.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: FilbyColors.border),
+                  ),
+                  child: const Icon(Icons.chevron_left, color: FilbyColors.textPrimary),
+                ),
+              ),
         title: const Text('ສິນເຊື່ອ'),
         actions: [
           if (_state != _CreditState.loading)
@@ -165,6 +204,9 @@ class _CreditScreenState extends State<CreditScreen> {
       case _CreditState.loading:
         return const Center(child: CircularProgressIndicator(color: FilbyColors.primary));
 
+      case _CreditState.active:
+        return _buildActive();
+
       case _CreditState.noApp:
         return _buildApplyForm();
 
@@ -177,6 +219,189 @@ class _CreditScreenState extends State<CreditScreen> {
       case _CreditState.rejected:
         return _buildRejected();
     }
+  }
+
+  // ── 0. ບັນຊີສິນເຊື່ອທີ່ໃຊ້ງານຢູ່ ────────────────────────────────────
+  Widget _buildActive() {
+    final c = _credit!;
+    final available = (c['available'] as num? ?? 0).toDouble();
+    final limit     = (c['effective_limit'] as num? ?? 0).toDouble();
+    final balance   = (c['balance'] as num? ?? 0).toDouble();
+    final held      = (c['held'] as num? ?? 0).toDouble();
+    final deposit   = (c['deposit'] as num? ?? 0).toDouble();
+    final status    = c['credit_status'] as String? ?? 'good';
+    final dueDate   = c['next_due_date'] as String?;
+    final daysLeft  = c['days_until_due'] as int?;
+    final usedRatio = limit > 0 ? ((balance + held) / limit).clamp(0.0, 1.0) : 0.0;
+
+    return RefreshIndicator(
+      onRefresh: _loadStatus,
+      color: FilbyColors.primary,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          // ── ວົງເງິນຄົງເຫຼືອ ──────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [FilbyColors.navy, FilbyColors.navySoft],
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text('ວົງເງິນທີ່ສັ່ງໄດ້ອີກ',
+                        style: TextStyle(fontSize: 12, color: Colors.white70)),
+                    ),
+                    _statusChip(status),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text('${_fmt(available)} ກີບ',
+                  style: const TextStyle(
+                    fontSize: 30, fontWeight: FontWeight.w800,
+                    color: Colors.white, letterSpacing: -0.5)),
+                const SizedBox(height: 14),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: usedRatio.toDouble(),
+                    minHeight: 6,
+                    backgroundColor: Colors.white24,
+                    valueColor: AlwaysStoppedAnimation(
+                      usedRatio > 0.85 ? const Color(0xFFEF8A7A) : FilbyColors.gold),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text('ໃຊ້ໄປ ${_fmt(balance + held)} ຈາກ ${_fmt(limit)} ກີບ',
+                  style: const TextStyle(fontSize: 11, color: Colors.white60)),
+              ],
+            ),
+          ),
+
+          // ── ວັນຄົບກຳນົດ ─────────────────────────────────────────
+          if (dueDate != null) ...[
+            const SizedBox(height: 14),
+            _dueBanner(dueDate, daysLeft),
+          ],
+
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: _statCard('ໜີ້ຄ້າງຊຳລະ', balance,
+                  Icons.receipt_long_outlined,
+                  balance > 0 ? FilbyColors.gold : FilbyColors.success)),
+              const SizedBox(width: 10),
+              Expanded(child: _statCard('ຈອງໄວ້ (ລໍສົ່ງເຄື່ອງ)', held,
+                  Icons.inventory_2_outlined, FilbyColors.textSecondary)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _statCard('ເງິນມັດຈຳທີ່ວາງໄວ້', deposit,
+              Icons.lock_outline, FilbyColors.primary, wide: true),
+
+          const SizedBox(height: 20),
+          CreditTermsCard(exampleAmount: balance > 0 ? balance : (limit > 0 ? limit : 2000000)),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip(String status) {
+    final map = {
+      'good':      ('ປົກກະຕິ',      const Color(0xFF6EE7A8)),
+      'watch':     ('ໃກ້ຄົບກຳນົດ',  FilbyColors.goldSoft),
+      'on_hold':   ('ລະງັບການສັ່ງ', const Color(0xFFEF8A7A)),
+      'suspended': ('ບັນຊີຖືກລະງັບ', const Color(0xFFEF8A7A)),
+      'defaulted': ('ຜິດນັດຊຳລະ',   const Color(0xFFEF8A7A)),
+    };
+    final (label, color) = map[status] ?? ('ປົກກະຕິ', const Color(0xFF6EE7A8));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Text(label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+    );
+  }
+
+  Widget _dueBanner(String dueDate, int? daysLeft) {
+    final overdue = daysLeft != null && daysLeft < 0;
+    final soon    = daysLeft != null && daysLeft >= 0 && daysLeft <= 7;
+    final color   = overdue ? const Color(0xFFE53935)
+                  : soon    ? FilbyColors.gold
+                            : FilbyColors.success;
+    final text = daysLeft == null
+        ? 'ຄົບກຳນົດ $dueDate'
+        : overdue
+            ? 'ເກີນກຳນົດມາ ${-daysLeft} ມື້ — ກຳລັງຄິດດອກເບ້ຍ ${CreditPolicy.monthlyLabel}/ເດືອນ'
+            : daysLeft == 0
+                ? 'ຄົບກຳນົດ ມື້ນີ້'
+                : 'ຄົບກຳນົດ ອີກ $daysLeft ມື້ ($dueDate)';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(overdue ? Icons.error_outline : Icons.event_outlined,
+              size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+              style: TextStyle(
+                fontSize: 12.5, height: 1.4,
+                fontWeight: FontWeight.w600, color: color)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard(String label, double value, IconData icon, Color color,
+      {bool wide = false}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: FilbyColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: FilbyColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                  style: const TextStyle(fontSize: 10.5, color: FilbyColors.textMuted)),
+                const SizedBox(height: 2),
+                Text('${_fmt(value)} ກີບ',
+                  style: TextStyle(
+                    fontSize: wide ? 15 : 13.5,
+                    fontWeight: FontWeight.w800, color: color)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── 1. Apply Form ─────────────────────────────────────────────────

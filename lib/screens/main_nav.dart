@@ -4,6 +4,7 @@ import '../services/cart_manager.dart';
 import 'home_screen.dart';
 import 'products_screen.dart';
 import 'cart_screen.dart';
+import 'credit_screen.dart';
 import 'finance_screen.dart';
 import 'profile_screen.dart';
 
@@ -19,12 +20,14 @@ class _MainNavState extends State<MainNav> {
   // Bumped when re-entering a tab to force a data refresh (IndexedStack keeps
   // screens alive, so a new key recreates the screen → initState refetches).
   int _homeTick = 0;
+  int _creditTick = 0;
   int _financeTick = 0;
 
   List<Widget> get _screens => [
         HomeScreen(key: ValueKey('home_$_homeTick')),
         const ProductsScreen(),
         const CartScreen(),
+        CreditScreen(key: ValueKey('credit_$_creditTick'), embedded: true),
         FinanceScreen(key: ValueKey('finance_$_financeTick')),
         const ProfileScreen(),
       ];
@@ -32,7 +35,8 @@ class _MainNavState extends State<MainNav> {
   void _select(int i) => setState(() {
         _currentIndex = i;
         if (i == 0) _homeTick++;
-        if (i == 3) _financeTick++;
+        if (i == 3) _creditTick++;
+        if (i == 4) _financeTick++;
       });
 
   @override
@@ -89,18 +93,25 @@ class _MainNavState extends State<MainNav> {
                   onTap: () => _select(2),
                 ),
                 _NavItem(
+                  icon: Icons.credit_card_outlined,
+                  activeIcon: Icons.credit_card_rounded,
+                  label: 'ສິນເຊື່ອ',
+                  isActive: _currentIndex == 3,
+                  onTap: () => _select(3),
+                ),
+                _NavItem(
                   icon: Icons.bar_chart_outlined,
                   activeIcon: Icons.bar_chart_rounded,
                   label: 'ລາຍງານ',
-                  isActive: _currentIndex == 3,
-                  onTap: () => _select(3),
+                  isActive: _currentIndex == 4,
+                  onTap: () => _select(4),
                 ),
                 _NavItem(
                   icon: Icons.person_outline,
                   activeIcon: Icons.person_rounded,
                   label: 'ບັນຊີ',
-                  isActive: _currentIndex == 4,
-                  onTap: () => _select(4),
+                  isActive: _currentIndex == 5,
+                  onTap: () => _select(5),
                 ),
               ],
             ),
