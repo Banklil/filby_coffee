@@ -82,7 +82,14 @@ async def lifespan(app: FastAPI):
         print(">>> Column migrations applied")
     except Exception as e:
         print(f">>> Column migration warning: {e}")
+
+    # ຄິດດອກເບ້ຍ ແລະ ປັບສະຖານະສິນເຊື່ອ ວັນລະຄັ້ງ — ບໍ່ຕ້ອງມີ cron ພາຍນອກ
+    from .jobs import scheduler as credit_scheduler
+    credit_scheduler.start()
+
     yield
+
+    await credit_scheduler.stop()
 
 
 app = FastAPI(
