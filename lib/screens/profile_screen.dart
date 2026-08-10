@@ -1,11 +1,106 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import '../theme.dart';
 import '../services/auth_service.dart';
+import '../widgets/credit_terms.dart';
 import 'shop_info_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Map<String, dynamic>? _credit;
+  bool _loadingCredit = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCredit();
+  }
+
+  Future<void> _loadCredit() async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.get(
+        Uri.parse('${AuthService.baseUrl}/api/credits/me'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 20));
+      if (res.statusCode == 200 && mounted) {
+        setState(() {
+          _credit = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+          _loadingCredit = false;
+        });
+        return;
+      }
+    } catch (_) {
+      // ປ່ອຍໃຫ້ບັດສະແດງສະຖານະ "ຍັງບໍ່ມີສິນເຊື່ອ" ແທນການລົ້ມ
+    }
+    if (mounted) setState(() => _loadingCredit = false);
+  }
+
+  /// ບັດສິນເຊື່ອຢູ່ໜ້າບັນຊີ. ເມື່ອກ່ອນ hardcode ເປັນ "—" ຕະຫຼອດ ຈຶ່ງຂັດກັບ
+  /// ໜ້າສິນເຊື່ອທີ່ບອກວ່າອະນຸມັດແລ້ວ. ດຽວນີ້ອ່ານແຫຼ່ງດຽວກັນ.
+  Widget _creditSummary() {
+    if (_loadingCredit) {
+      return const SizedBox(
+        height: 62,
+        child: Center(
+          child: SizedBox(width: 18, height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54)),
+        ),
+      );
+    }
+
+    final c = _credit;
+    final approved  = (c?['approved_limit'] as num? ?? 0).toDouble();
+    final available = (c?['available'] as num? ?? 0).toDouble();
+    final balance   = (c?['balance'] as num? ?? 0).toDouble();
+    final needDep   = (c?['required_deposit'] as num? ?? 0).toDouble();
+    final awaiting  = c?['awaiting_deposit'] == true;
+
+    final String big, note;
+    if (approved <= 0) {
+      big = '—';
+      note = 'ຍັງບໍ່ມີສິນເຊື່ອ · ສະໝັກໄດ້ໃນແທັບສິນເຊື່ອ';
+    } else if (awaiting) {
+      big = kip(approved);
+      note = 'ອະນຸມັດແລ້ວ · ວາງມັດຈຳ ${kip(needDep)} ກີບ ຈຶ່ງໃຊ້ໄດ້';
+    } else {
+      big = kip(available);
+      note = balance > 0
+          ? 'ກີບ ສັ່ງໄດ້ອີກ · ໜີ້ຄ້າງ ${kip(balance)} ກີບ'
+          : 'ກີບ ສັ່ງໄດ້ · ບໍ່ມີໜີ້ຄ້າງ';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(awaiting ? 'ວົງເງິນທີ່ອະນຸມັດ' : 'ສິນເຊື່ອທີ່ໃຊ້ໄດ້',
+              style: const TextStyle(fontSize: 11, color: Colors.white70)),
+            Text('${CreditPolicy.graceDays} ວັນ ບໍ່ມີດອກ',
+              style: const TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700, color: FilbyColors.goldSoft)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(big,
+          style: TextStyle(
+            fontSize: 26, fontWeight: FontWeight.w800,
+            color: awaiting ? Colors.white54 : Colors.white,
+            letterSpacing: -0.5)),
+        Text(note, style: const TextStyle(fontSize: 11, color: Colors.white70)),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,24 +192,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('ສິນເຊື່ອທີ່ໃຊ້ໄດ້', style: TextStyle(fontSize: 11, color: Colors.white70)),
-                      Text('30 ວັນ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: FilbyColors.goldSoft)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    '—',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5),
-                  ),
-                  const Text('ກີບ · ຕິດຕໍ່ admin ເພື່ອເປີດສິນເຊື່ອ', style: TextStyle(fontSize: 11, color: Colors.white70)),
-                ],
-              ),
+              child: _creditSummary(),
             ),
             const SizedBox(height: 16),
             // Menu group 1

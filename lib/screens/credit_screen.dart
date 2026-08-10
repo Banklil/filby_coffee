@@ -75,10 +75,13 @@ class _CreditScreenState extends State<CreditScreen> {
     }
   }
 
+  /// ລວມກໍລະນີ "ອະນຸມັດແລ້ວ ແຕ່ຍັງບໍ່ໄດ້ວາງມັດຈຳ" ນຳ — ຖ້າບໍ່ລວມ ໜ້າຈໍຈະຕົກໄປ
+  /// ໃຊ້ໜ້າ approved ເກົ່າ ທີ່ສະແດງວົງເງິນທີ່ອະນຸມັດຄືກັບວ່າໃຊ້ໄດ້ແລ້ວ.
   bool get _hasFacility {
     final c = _credit;
     if (c == null) return false;
-    return (c['effective_limit'] as num? ?? 0) > 0 ||
+    return (c['approved_limit'] as num? ?? 0) > 0 ||
+           (c['effective_limit'] as num? ?? 0) > 0 ||
            (c['balance'] as num? ?? 0) > 0 ||
            (c['held'] as num? ?? 0) > 0;
   }
@@ -226,9 +229,12 @@ class _CreditScreenState extends State<CreditScreen> {
     final c = _credit!;
     final available = (c['available'] as num? ?? 0).toDouble();
     final limit     = (c['effective_limit'] as num? ?? 0).toDouble();
+    final approved  = (c['approved_limit'] as num? ?? 0).toDouble();
     final balance   = (c['balance'] as num? ?? 0).toDouble();
     final held      = (c['held'] as num? ?? 0).toDouble();
     final deposit   = (c['deposit'] as num? ?? 0).toDouble();
+    final needDep   = (c['required_deposit'] as num? ?? 0).toDouble();
+    final awaiting  = c['awaiting_deposit'] == true;
     final status    = c['credit_status'] as String? ?? 'good';
     final dueDate   = c['next_due_date'] as String?;
     final daysLeft  = c['days_until_due'] as int?;
@@ -255,35 +261,49 @@ class _CreditScreenState extends State<CreditScreen> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
-                      child: Text('ວົງເງິນທີ່ສັ່ງໄດ້ອີກ',
-                        style: TextStyle(fontSize: 12, color: Colors.white70)),
+                    Expanded(
+                      child: Text(
+                        awaiting ? 'ວົງເງິນທີ່ອະນຸມັດ' : 'ວົງເງິນທີ່ສັ່ງໄດ້ອີກ',
+                        style: const TextStyle(fontSize: 12, color: Colors.white70)),
                     ),
                     _statusChip(status),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('${_fmt(available)} ກີບ',
-                  style: const TextStyle(
+                Text('${_fmt(awaiting ? approved : available)} ກີບ',
+                  style: TextStyle(
                     fontSize: 30, fontWeight: FontWeight.w800,
-                    color: Colors.white, letterSpacing: -0.5)),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: usedRatio.toDouble(),
-                    minHeight: 6,
-                    backgroundColor: Colors.white24,
-                    valueColor: AlwaysStoppedAnimation(
-                      usedRatio > 0.85 ? const Color(0xFFEF8A7A) : FilbyColors.gold),
+                    color: awaiting ? Colors.white54 : Colors.white,
+                    letterSpacing: -0.5)),
+                if (!awaiting) ...[
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: usedRatio.toDouble(),
+                      minHeight: 6,
+                      backgroundColor: Colors.white24,
+                      valueColor: AlwaysStoppedAnimation(
+                        usedRatio > 0.85 ? const Color(0xFFEF8A7A) : FilbyColors.gold),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text('ໃຊ້ໄປ ${_fmt(balance + held)} ຈາກ ${_fmt(limit)} ກີບ',
-                  style: const TextStyle(fontSize: 11, color: Colors.white60)),
+                  const SizedBox(height: 6),
+                  Text('ໃຊ້ໄປ ${_fmt(balance + held)} ຈາກ ${_fmt(limit)} ກີບ',
+                    style: const TextStyle(fontSize: 11, color: Colors.white60)),
+                ] else ...[
+                  const SizedBox(height: 4),
+                  const Text('ຍັງໃຊ້ບໍ່ໄດ້ເທື່ອ',
+                    style: TextStyle(fontSize: 11, color: Colors.white60)),
+                ],
               ],
             ),
           ),
+
+          // ── ອະນຸມັດແລ້ວ ແຕ່ຍັງບໍ່ໄດ້ວາງມັດຈຳ ─────────────────────
+          if (awaiting) ...[
+            const SizedBox(height: 14),
+            _depositBanner(needDep),
+          ],
 
           // ── ວັນຄົບກຳນົດ ─────────────────────────────────────────
           if (dueDate != null) ...[
@@ -332,6 +352,59 @@ class _CreditScreenState extends State<CreditScreen> {
       ),
       child: Text(label,
         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+    );
+  }
+
+  /// ອະນຸມັດວົງເງິນແລ້ວ ແຕ່ຍັງສັ່ງບໍ່ໄດ້ຈົນກວ່າມັດຈຳຈະພໍ — ຕ້ອງບອກໃຫ້ຈະແຈ້ງ
+  /// ພ້ອມຈຳນວນທີ່ຕ້ອງວາງ ບໍ່ດັ່ງນັ້ນຮ້ານຈະງົງວ່າເປັນຫຍັງສັ່ງບໍ່ໄດ້.
+  Widget _depositBanner(double needed) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FilbyColors.warningBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: FilbyColors.gold.withOpacity(0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lock_clock_outlined, size: 17, color: FilbyColors.gold),
+              const SizedBox(width: 8),
+              Text('ຕ້ອງວາງມັດຈຳກ່ອນຈຶ່ງເລີ່ມໃຊ້ໄດ້',
+                style: GoogleFonts.notoSansLao(
+                  fontSize: 13, fontWeight: FontWeight.w700,
+                  color: FilbyColors.textPrimary)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('${_fmt(needed)} ກີບ',
+                style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.w800,
+                  color: FilbyColors.gold)),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text('ຈຳນວນທີ່ຍັງຕ້ອງວາງ',
+                  style: GoogleFonts.notoSansLao(
+                    fontSize: 11, color: FilbyColors.textSecondary)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'ເງິນມັດຈຳເປັນຫຼັກປະກັນ ບໍ່ແມ່ນຄ່າທຳນຽມ — ຄືນໃຫ້ເຕັມຈຳນວນ '
+            'ເມື່ອທ່ານປິດບັນຊີສິນເຊື່ອ ແລະ ຊຳລະໜີ້ຄົບແລ້ວ. '
+            'ຕິດຕໍ່ທີມງານ Filby ເພື່ອວາງມັດຈຳ.',
+            style: GoogleFonts.notoSansLao(
+              fontSize: 12, height: 1.5, color: FilbyColors.textSecondary),
+          ),
+        ],
+      ),
     );
   }
 

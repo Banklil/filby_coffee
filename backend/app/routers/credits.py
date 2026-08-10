@@ -270,6 +270,8 @@ def my_credit(db: Session = Depends(get_db), owner: ShopOwner = Depends(_get_own
             "available": 0, "deposit": 0, "net_exposure": 0,
             "credit_status": "good", "grace_days": credit.GRACE_DAYS,
             "monthly_rate": credit.MONTHLY_RATE, "next_due_date": None,
+            "days_until_due": None, "deposit_multiplier": 0,
+            "required_deposit": 0, "awaiting_deposit": False,
         }
 
     snap = credit.snapshot(db, shop)

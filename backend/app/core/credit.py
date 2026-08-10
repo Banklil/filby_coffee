@@ -85,14 +85,33 @@ def available(db: Session, shop: Shop) -> int:
                   - active_holds(db, shop.id))
 
 
+def required_deposit(shop: Shop) -> int:
+    """ມັດຈຳທີ່ຍັງຕ້ອງວາງເພີ່ມ ເພື່ອປົດວົງເງິນທີ່ອະນຸມັດໄວ້ໃຫ້ຄົບ.
+
+    ຝ່າຍບໍລິຫານອະນຸມັດວົງເງິນໄດ້ ແຕ່ວົງເງິນນັ້ນຈະໃຊ້ບໍ່ໄດ້ຈົນກວ່າມັດຈຳຈະພໍ.
+    ຖ້າບໍ່ບອກຈຳນວນນີ້ ຮ້ານຈະເຫັນວົງເງິນໃຫຍ່ໆ ແຕ່ສັ່ງເຄື່ອງບໍ່ໄດ້ ໂດຍບໍ່ຮູ້ສາເຫດ.
+    """
+    approved = int(shop.credit_limit or 0)
+    unsecured = int(shop.unsecured_allowance or 0)
+    mult = int(shop.deposit_multiplier or 0)
+    if approved <= 0 or mult <= 0:
+        return 0
+    gap = approved - unsecured
+    if gap <= 0:
+        return 0
+    needed = -(-gap // mult)          # ປັດຂຶ້ນ
+    return max(0, needed - int(shop.deposit_balance or 0))
+
+
 def snapshot(db: Session, shop: Shop) -> dict:
     """ຂໍ້ມູນສິນເຊື່ອສຳລັບສະແດງໃນແອັບ ແລະ dashboard."""
     bal = balance(db, shop.id)
     holds = active_holds(db, shop.id)
     lim = effective_limit(shop)
     deposit = int(shop.deposit_balance or 0)
+    approved = int(shop.credit_limit or 0)
     return {
-        "approved_limit":  int(shop.credit_limit or 0),
+        "approved_limit":  approved,
         "effective_limit": lim,
         "balance":         bal,
         "held":            holds,
@@ -102,6 +121,10 @@ def snapshot(db: Session, shop: Shop) -> dict:
         "credit_status":   shop.credit_status or "good",
         "grace_days":      GRACE_DAYS,
         "monthly_rate":    MONTHLY_RATE,
+        # ອະນຸມັດແລ້ວ ແຕ່ຍັງໃຊ້ບໍ່ໄດ້ເພາະມັດຈຳຍັງບໍ່ພໍ
+        "deposit_multiplier": int(shop.deposit_multiplier or 0),
+        "required_deposit":   required_deposit(shop),
+        "awaiting_deposit":   approved > 0 and lim <= 0,
     }
 
 
