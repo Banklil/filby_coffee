@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/credit_terms.dart';
+import '../widgets/shop_logo.dart';
 import 'notifications_screen.dart';
 import 'shop_info_screen.dart';
 
@@ -244,8 +245,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Profile card
-            Container(
+            // Profile card — ກົດແລ້ວໄປແກ້ຂໍ້ມູນ/ຮູບຮ້ານໄດ້ເລີຍ
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () async {
+                await Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ShopInfoScreen()));
+                if (mounted) setState(() {});
+              },
+              child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: FilbyColors.surface,
@@ -254,27 +262,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [FilbyColors.primary, FilbyColors.primaryDeep],
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                  ShopLogo(
+                    size: 52,
+                    radius: 14,
+                    // ຍັງບໍ່ມີຮູບຮ້ານ → ໃຊ້ຕົວອັກສອນທຳອິດຄືເກົ່າ ບໍ່ແມ່ນໂລໂກ້ Filby
+                    fallback: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [FilbyColors.primary, FilbyColors.primaryDeep],
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Center(
-                      child: Text(
-                        initial,
-                        style: GoogleFonts.notoSerifLao(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                      child: Center(
+                        child: Text(
+                          initial,
+                          style: GoogleFonts.notoSerifLao(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
+                  ),
+                      // ບອກໃຫ້ຮູ້ວ່າຮູບນີ້ປ່ຽນໄດ້
+                      Positioned(
+                        right: -3,
+                        bottom: -3,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: FilbyColors.primary,
+                            shape: BoxShape.circle,
+                            border:
+                                Border.all(color: FilbyColors.surface, width: 2),
+                          ),
+                          child: const Icon(Icons.photo_camera_rounded,
+                              size: 9, color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -297,8 +329,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
+                  const Icon(Icons.chevron_right,
+                      size: 16, color: FilbyColors.textMuted),
                 ],
               ),
+            ),
             ),
             const SizedBox(height: 16),
             // Credit summary
