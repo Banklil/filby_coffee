@@ -102,6 +102,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showPaymentMethods(BuildContext ctx) {
+    final c = _credit;
+    final available = (c?['available'] as num? ?? 0).toDouble();
+    final awaiting = c?['awaiting_deposit'] == true;
+    _sheet(ctx, 'ວິທີຊຳລະ', [
+      _sheetRow(Icons.payments_outlined, 'ເງິນສົດ',
+          'ຈ່າຍຕອນຮັບເຄື່ອງ — ໃຊ້ໄດ້ທຸກເມື່ອ'),
+      _sheetRow(Icons.qr_code_2, 'ໂອນຜ່ານ QR',
+          'ສະແກນ QR ຂອງບໍລິສັດຕອນສັ່ງ ແລ້ວລໍທີມງານຢືນຢັນ'),
+      _sheetRow(
+        Icons.credit_card,
+        'ສິນເຊື່ອ',
+        awaiting
+            ? 'ອະນຸມັດແລ້ວ ແຕ່ຕ້ອງວາງມັດຈຳກ່ອນ — ເບິ່ງລາຍລະອຽດໃນແທັບສິນເຊື່ອ'
+            : available > 0
+                ? 'ສັ່ງໄດ້ອີກ ${kip(available)} ກີບ · '
+                    'ຊຳລະໃນ ${CreditPolicy.graceDays} ວັນ ບໍ່ມີດອກເບ້ຍ'
+                : 'ຍັງບໍ່ມີວົງເງິນ — ສະໝັກໄດ້ໃນແທັບສິນເຊື່ອ',
+      ),
+    ]);
+  }
+
+  void _showHelp(BuildContext ctx) {
+    _sheet(ctx, 'ຊ່ວຍເຫຼືອ', [
+      _sheetRow(Icons.support_agent, 'ຕິດຕໍ່ທີມງານ Filby',
+          'ມີບັນຫາການສັ່ງຊື້, ການຊຳລະ ຫຼື ສິນເຊື່ອ — ຕິດຕໍ່ພວກເຮົາໄດ້ເລີຍ'),
+      _sheetRow(Icons.receipt_long_outlined, 'ເງື່ອນໄຂສິນເຊື່ອ',
+          'ຊຳລະໃນ ${CreditPolicy.graceDays} ວັນ ບໍ່ມີດອກເບ້ຍ · '
+          'ເກີນນັ້ນຄິດ ${CreditPolicy.monthlyLabel} ຕໍ່ເດືອນ '
+          '(${CreditPolicy.dailyLabel} ຕໍ່ມື້)'),
+      _sheetRow(Icons.info_outline, 'ລຸ້ນແອັບ', 'Filby v1.0 · 2026'),
+    ]);
+  }
+
+  void _sheet(BuildContext ctx, String title, List<Widget> rows) {
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: FilbyColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: FilbyColors.surface3,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              Text(title,
+                  style: GoogleFonts.notoSerifLao(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: FilbyColors.textPrimary)),
+              const SizedBox(height: 14),
+              ...rows,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetRow(IconData icon, String title, String body) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: FilbyColors.surface2,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, size: 16, color: FilbyColors.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: GoogleFonts.notoSansLao(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: FilbyColors.textPrimary)),
+                const SizedBox(height: 2),
+                Text(body,
+                    style: GoogleFonts.notoSansLao(
+                        fontSize: 12,
+                        height: 1.45,
+                        color: FilbyColors.textSecondary)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
@@ -196,19 +308,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 16),
             // Menu group 1
-            const _MenuGroup(
+            _MenuGroup(
               items: [
-                _MenuRowData(icon: Icons.store_outlined, label: 'ຂໍ້ມູນຮ້ານ'),
-                _MenuRowData(icon: Icons.credit_card_outlined, label: 'ວິທີຊຳລະ'),
-                _MenuRowData(icon: Icons.notifications_outlined, label: 'ການເຕືອນ'),
-                _MenuRowData(icon: Icons.language_outlined, label: 'ພາສາ', value: 'ລາວ'),
+                _MenuRowData(
+                  icon: Icons.store_outlined,
+                  label: 'ຂໍ້ມູນຮ້ານ',
+                  onTap: (ctx) async {
+                    await Navigator.push(ctx,
+                        MaterialPageRoute(builder: (_) => const ShopInfoScreen()));
+                    // ຊື່ຮ້ານອາດປ່ຽນ — ແຕ້ມໃໝ່ໃຫ້ບັດຂ້າງເທິງຕົງກັນ
+                    if (mounted) setState(() {});
+                  },
+                ),
+                _MenuRowData(
+                  icon: Icons.credit_card_outlined,
+                  label: 'ວິທີຊຳລະ',
+                  onTap: (ctx) async => _showPaymentMethods(ctx),
+                ),
+                const _MenuRowData(
+                    icon: Icons.notifications_outlined, label: 'ການເຕືອນ'),
+                const _MenuRowData(
+                    icon: Icons.language_outlined, label: 'ພາສາ', value: 'ລາວ'),
               ],
             ),
             const SizedBox(height: 10),
-            const _MenuGroup(
+            _MenuGroup(
               items: [
-                _MenuRowData(icon: Icons.help_outline, label: 'ຊ່ວຍເຫຼືອ'),
-                _MenuRowData(icon: Icons.logout, label: 'ອອກຈາກລະບົບ', isDestructive: true),
+                _MenuRowData(
+                  icon: Icons.help_outline,
+                  label: 'ຊ່ວຍເຫຼືອ',
+                  onTap: (ctx) async => _showHelp(ctx),
+                ),
+                const _MenuRowData(
+                    icon: Icons.logout, label: 'ອອກຈາກລະບົບ', isDestructive: true),
               ],
             ),
             const SizedBox(height: 30),
@@ -232,12 +364,19 @@ class _MenuRowData {
   final String? value;
   final bool isDestructive;
 
+  /// ສິ່ງທີ່ຈະເກີດຂຶ້ນເມື່ອກົດ. ຖ້າ null = ຟີເຈີຍັງບໍ່ພ້ອມ — ແຖວຈະເປັນສີຈາງ
+  /// ແລະ ບອກຜູ້ໃຊ້ຢ່າງຈະແຈ້ງ ແທນທີ່ຈະກົດແລ້ວງຽບໆ.
+  final Future<void> Function(BuildContext)? onTap;
+
   const _MenuRowData({
     required this.icon,
     required this.label,
     this.value,
     this.isDestructive = false,
+    this.onTap,
   });
+
+  bool get enabled => onTap != null || isDestructive;
 }
 
 class _MenuGroup extends StatelessWidget {
@@ -275,19 +414,27 @@ class _MenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dim = !data.enabled;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () async {
-        if (data.label == 'ຂໍ້ມູນຮ້ານ') {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopInfoScreen()));
-          return;
-        }
         if (data.isDestructive) {
           await AuthService.signOut();
           if (context.mounted) {
             Navigator.of(context).popUntil((route) => route.isFirst);
             Navigator.of(context).pushReplacementNamed('/login');
           }
+          return;
         }
+        if (data.onTap != null) {
+          await data.onTap!(context);
+          return;
+        }
+        // ບໍ່ປ່ອຍໃຫ້ກົດແລ້ວງຽບໆ — ບອກໄປເລີຍວ່າຍັງບໍ່ພ້ອມ
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${data.label} — ຍັງບໍ່ເປີດໃຫ້ໃຊ້ເທື່ອ'),
+          backgroundColor: FilbyColors.navy,
+        ));
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -303,7 +450,11 @@ class _MenuRow extends StatelessWidget {
               child: Icon(
                 data.icon,
                 size: 15,
-                color: data.isDestructive ? const Color(0xFFE85A4A) : FilbyColors.textSecondary,
+                color: data.isDestructive
+                    ? const Color(0xFFE85A4A)
+                    : dim
+                        ? FilbyColors.textMuted
+                        : FilbyColors.textSecondary,
               ),
             ),
             const SizedBox(width: 12),
@@ -313,7 +464,11 @@ class _MenuRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: data.isDestructive ? const Color(0xFFE85A4A) : FilbyColors.textPrimary,
+                  color: data.isDestructive
+                      ? const Color(0xFFE85A4A)
+                      : dim
+                          ? FilbyColors.textMuted
+                          : FilbyColors.textPrimary,
                 ),
               ),
             ),
@@ -321,7 +476,12 @@ class _MenuRow extends StatelessWidget {
               Text(data.value!, style: const TextStyle(fontSize: 12, color: FilbyColors.textMuted)),
               const SizedBox(width: 4),
             ],
-            const Icon(Icons.chevron_right, size: 16, color: FilbyColors.textMuted),
+            if (dim)
+              Text('ໄວໆນີ້',
+                  style: GoogleFonts.notoSansLao(
+                      fontSize: 10.5, color: FilbyColors.textMuted))
+            else
+              const Icon(Icons.chevron_right, size: 16, color: FilbyColors.textMuted),
           ],
         ),
       ),

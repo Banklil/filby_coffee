@@ -7,13 +7,23 @@ class AuthUser {
   final int id;
   final String email;
   final String shopName;
+  final String? phone;
+  final String? address;
 
-  const AuthUser({required this.id, required this.email, required this.shopName});
+  const AuthUser({
+    required this.id,
+    required this.email,
+    required this.shopName,
+    this.phone,
+    this.address,
+  });
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
         id: j['id'],
         email: j['email'],
         shopName: j['shop_name'] ?? 'ຮ້ານຂອງຂ້ອຍ',
+        phone: j['phone'] as String?,
+        address: j['address'] as String?,
       );
 }
 
@@ -313,6 +323,37 @@ class AuthService {
       return null;
     } catch (_) {
       return null;
+    }
+  }
+
+  /// ບັນທຶກຂໍ້ມູນຮ້ານ. ຄືນ null ຖ້າສຳເລັດ ຫຼື ຂໍ້ຄວາມຜິດພາດເປັນພາສາລາວ.
+  static Future<String?> updateProfile({
+    String? shopName,
+    String? phone,
+    String? address,
+  }) async {
+    try {
+      final headers = await authHeaders();
+      final res = await http.patch(
+        Uri.parse('$baseUrl/api/shop/profile'),
+        headers: headers,
+        body: jsonEncode({
+          if (shopName != null) 'shop_name': shopName,
+          if (phone != null) 'phone': phone,
+          if (address != null) 'address': address,
+        }),
+      ).timeout(const Duration(seconds: 20));
+
+      if (res.statusCode == 200) {
+        _currentUser = AuthUser.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+        return null;
+      }
+      if (res.statusCode == 401) return 'ເຊສຊັນໝົດອາຍຸ ກະລຸນາເຂົ້າສູ່ລະບົບໃໝ່';
+      return 'ບັນທຶກບໍ່ສຳເລັດ (${res.statusCode})';
+    } on TimeoutException {
+      return 'ເຄືອຂ່າຍຊ້າ ກະລຸນາລອງໃໝ່';
+    } catch (_) {
+      return 'ເຊື່ອມຕໍ່ບໍ່ໄດ້ ກະລຸນາກວດອິນເຕີເນັດ';
     }
   }
 
