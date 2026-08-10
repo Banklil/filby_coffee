@@ -143,39 +143,44 @@ class _GraceTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 30,
-              child: _TimelineSegment(
-                title: 'ມື້ 1 – ${CreditPolicy.graceDays}',
-                big: '0%',
-                caption: 'ບໍ່ມີດອກເບ້ຍ',
-                color: FilbyColors.success,
-                background: FilbyColors.successBg,
-                radius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
+        // IntrinsicHeight ໃຫ້ສອງຊ່ອງສູງເທົ່າກັນ. ໃຊ້ CrossAxisAlignment.stretch
+        // ລ້າໆບໍ່ໄດ້ — Row ຢູ່ໃນ ListView ຈຶ່ງບໍ່ມີຂອບເຂດຄວາມສູງ ແລ້ວ layout ລົ້ມ
+        // ພາໃຫ້ສ່ວນທີ່ເຫຼືອຂອງບັດບໍ່ຖືກສະແດງເລີຍ.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 30,
+                child: _TimelineSegment(
+                  title: 'ມື້ 1 – ${CreditPolicy.graceDays}',
+                  big: '0%',
+                  caption: 'ບໍ່ມີດອກເບ້ຍ',
+                  color: FilbyColors.success,
+                  background: FilbyColors.successBg,
+                  radius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 3),
-            Expanded(
-              flex: 22,
-              child: _TimelineSegment(
-                title: 'ມື້ ${CreditPolicy.graceDays + 1} ຂຶ້ນໄປ',
-                big: CreditPolicy.monthlyLabel,
-                caption: 'ຕໍ່ເດືອນ',
-                color: FilbyColors.gold,
-                background: FilbyColors.warningBg,
-                radius: const BorderRadius.only(
-                  topRight: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
+              const SizedBox(width: 3),
+              Expanded(
+                flex: 22,
+                child: _TimelineSegment(
+                  title: 'ມື້ ${CreditPolicy.graceDays + 1} ຂຶ້ນໄປ',
+                  big: CreditPolicy.monthlyLabel,
+                  caption: 'ຕໍ່ເດືອນ',
+                  color: FilbyColors.gold,
+                  background: FilbyColors.warningBg,
+                  radius: const BorderRadius.only(
+                    topRight: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 8),
         Row(

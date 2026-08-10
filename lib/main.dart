@@ -23,6 +23,20 @@ class FilbyApp extends StatelessWidget {
       title: 'Filby Coffee',
       theme: filbyTheme(),
       debugShowCheckedModeBanner: false,
+      // ແອັບນີ້ອອກແບບມາສຳລັບມືຖື ແຕ່ເສີບເປັນເວັບນຳ. ຖ້າບໍ່ຈຳກັດຄວາມກວ້າງ
+      // ທຸກແຖວຈະຢືດເຕັມຈໍ 2500px ຈົນອ່ານບໍ່ໄດ້. ບີບໄວ້ກາງຈໍແທນ.
+      builder: (context, child) {
+        if (child == null) return const SizedBox.shrink();
+        return ColoredBox(
+          color: FilbyColors.bgDeep,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Material(color: FilbyColors.bg, child: child),
+            ),
+          ),
+        );
+      },
       home: const _AuthGate(),
       routes: {
         '/login': (_) => const LoginScreen(),
