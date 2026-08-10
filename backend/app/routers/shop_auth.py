@@ -42,9 +42,19 @@ class OwnerOut(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     bean_balance_kg: float = 0
+    logo_url: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+    @staticmethod
+    def of(owner) -> "OwnerOut":
+        """ເພີ່ມ logo_url ໃຫ້ client ໂດຍບໍ່ຕ້ອງສົ່ງ bytes ຂອງຮູບໄປນຳ."""
+        out = OwnerOut.model_validate(owner)
+        if getattr(owner, "logo_data", None):
+            v = int(owner.logo_updated_at.timestamp()) if owner.logo_updated_at else 0
+            out.logo_url = f"/api/shop/{owner.id}/logo?v={v}"
+        return out
 
 
 class TokenResponse(BaseModel):
@@ -85,7 +95,7 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
     return TokenResponse(
         access_token=create_access_token({"sub": str(owner.id)}),
         refresh_token=create_refresh_token({"sub": str(owner.id)}),
-        user=OwnerOut.model_validate(owner),
+        user=OwnerOut.of(owner),
     )
 
 
@@ -98,7 +108,7 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
         return TokenResponse(
             access_token=create_access_token({"sub": str(owner.id)}),
             refresh_token=create_refresh_token({"sub": str(owner.id)}),
-            user=OwnerOut.model_validate(owner),
+            user=OwnerOut.of(owner),
         )
     except HTTPException:
         raise
@@ -124,13 +134,13 @@ def refresh(body: RefreshRequest, db: Session = Depends(get_db)):
     return TokenResponse(
         access_token=create_access_token({"sub": str(owner.id)}),
         refresh_token=create_refresh_token({"sub": str(owner.id)}),
-        user=OwnerOut.model_validate(owner),
+        user=OwnerOut.of(owner),
     )
 
 
 @router.get("/me", response_model=OwnerOut)
 def me(owner: ShopOwner = Depends(_get_owner)):
-    return owner
+    return OwnerOut.of(owner)
 
 
 class ProfileUpdate(BaseModel):
@@ -159,7 +169,7 @@ def update_profile(body: ProfileUpdate, owner: ShopOwner = Depends(_get_owner), 
         pass
     db.commit()
     db.refresh(owner)
-    return owner
+    return OwnerOut.of(owner)
 
 
 class ResetPasswordRequest(BaseModel):

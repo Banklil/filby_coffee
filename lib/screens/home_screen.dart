@@ -6,6 +6,8 @@ import 'pos_screen.dart';
 import 'credit_screen.dart';
 import 'products_screen.dart';
 import 'sales_history_screen.dart';
+import 'notifications_screen.dart';
+import '../widgets/shop_logo.dart';
 
 // ── Filby Coffee palette (from logo): deep navy + gold on light ──────────────
 const _navy = Color(0xFF17233F);
@@ -26,15 +28,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Future<void> _loadUnread() async {
+    final n = await NotificationBadge.unreadCount();
+    if (mounted) setState(() => _unreadNotifs = n);
+  }
+
   Map<String, dynamic>? _summary;
   List _recent = const [];
   bool _loading = true;
+  int _unreadNotifs = 0;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadUnread();
     _timer = Timer.periodic(const Duration(seconds: 20), (_) => _load());
   }
 
@@ -151,12 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 42, height: 42,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                clipBehavior: Clip.hardEdge,
-                child: Image.asset('assets/logo.jpeg', fit: BoxFit.cover),
-              ),
+              const ShopLogo(size: 42, radius: 12),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -171,11 +175,44 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              Container(
-                width: 38, height: 38,
-                decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(11)),
-                child: const Icon(Icons.notifications_none_rounded, size: 19, color: Colors.white),
+              // ເມື່ອກ່ອນເປັນ Container ລ້າໆ ບໍ່ມີ onTap — ເປັນພຽງຮູບປະດັບ
+              GestureDetector(
+                onTap: () async {
+                  await Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                  if (mounted) setState(() => _unreadNotifs = 0);
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(11)),
+                      child: const Icon(Icons.notifications_none_rounded,
+                          size: 19, color: Colors.white),
+                    ),
+                    if (_unreadNotifs > 0)
+                      Positioned(
+                        top: -3, right: -3,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE53935),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(color: _navy, width: 1.5),
+                          ),
+                          child: Text('$_unreadNotifs',
+                              style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white)),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),

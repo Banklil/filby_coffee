@@ -10,13 +10,21 @@ class AuthUser {
   final String? phone;
   final String? address;
 
+  /// path ຈາກ server ເຊັ່ນ /api/shop/4/logo?v=123 — null ຖ້າຍັງບໍ່ໄດ້ອັບ
+  final String? logoPath;
+
   const AuthUser({
     required this.id,
     required this.email,
     required this.shopName,
     this.phone,
     this.address,
+    this.logoPath,
   });
+
+  /// URL ເຕັມທີ່ເອົາໄປໃສ່ Image.network ໄດ້ເລີຍ
+  String? get logoUrl =>
+      logoPath == null ? null : '${AuthService.baseUrl}$logoPath';
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
         id: j['id'],
@@ -24,6 +32,7 @@ class AuthUser {
         shopName: j['shop_name'] ?? 'ຮ້ານຂອງຂ້ອຍ',
         phone: j['phone'] as String?,
         address: j['address'] as String?,
+        logoPath: j['logo_url'] as String?,
       );
 }
 
@@ -354,6 +363,56 @@ class AuthService {
       return 'ເຄືອຂ່າຍຊ້າ ກະລຸນາລອງໃໝ່';
     } catch (_) {
       return 'ເຊື່ອມຕໍ່ບໍ່ໄດ້ ກະລຸນາກວດອິນເຕີເນັດ';
+    }
+  }
+
+  /// ອັບໂຫລດໂລໂກ້ຮ້ານ. ຄືນ null ຖ້າສຳເລັດ ຫຼື ຂໍ້ຄວາມຜິດພາດ.
+  ///
+  /// ບໍ່ຕ້ອງສົ່ງ content-type — server ອ່ານຊະນິດຮູບຈາກ magic bytes ເອງ.
+  static Future<String?> uploadLogo(List<int> bytes, String filename) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return 'ກະລຸນາເຂົ້າສູ່ລະບົບໃໝ່';
+
+      final req = http.MultipartRequest(
+          'POST', Uri.parse('$baseUrl/api/shop/logo'))
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(http.MultipartFile.fromBytes('file', bytes,
+            filename: filename));
+
+      final res = await http.Response.fromStream(
+          await req.send().timeout(const Duration(seconds: 60)));
+
+      if (res.statusCode == 200) {
+        await loadCurrentUser();     // ດຶງ logo_url ໃໝ່
+        return null;
+      }
+      try {
+        return jsonDecode(utf8.decode(res.bodyBytes))['detail']?.toString() ??
+            'ອັບໂຫລດບໍ່ສຳເລັດ (${res.statusCode})';
+      } catch (_) {
+        return 'ອັບໂຫລດບໍ່ສຳເລັດ (${res.statusCode})';
+      }
+    } on TimeoutException {
+      return 'ອັບໂຫລດຊ້າເກີນໄປ ກະລຸນາລອງໃໝ່';
+    } catch (_) {
+      return 'ເຊື່ອມຕໍ່ບໍ່ໄດ້ ກະລຸນາກວດອິນເຕີເນັດ';
+    }
+  }
+
+  static Future<String?> deleteLogo() async {
+    try {
+      final headers = await authHeaders();
+      final res = await http
+          .delete(Uri.parse('$baseUrl/api/shop/logo'), headers: headers)
+          .timeout(const Duration(seconds: 30));
+      if (res.statusCode == 200) {
+        await loadCurrentUser();
+        return null;
+      }
+      return 'ລຶບບໍ່ສຳເລັດ (${res.statusCode})';
+    } catch (_) {
+      return 'ເຊື່ອມຕໍ່ບໍ່ໄດ້';
     }
   }
 

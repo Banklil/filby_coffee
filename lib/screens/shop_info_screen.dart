@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
+import '../widgets/shop_logo.dart';
 
 class ShopInfoScreen extends StatefulWidget {
   const ShopInfoScreen({super.key});
@@ -18,6 +20,7 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
 
   bool _saving = false;
   bool _dirty = false;
+  bool _uploadingLogo = false;
 
   @override
   void initState() {
@@ -127,25 +130,7 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              Center(
-                child: Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                          color: FilbyColors.primary.withValues(alpha: 0.2),
-                          blurRadius: 20),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.asset('assets/logo.jpeg', fit: BoxFit.contain),
-                  ),
-                ),
-              ),
+              Center(child: _logoPicker()),
               const SizedBox(height: 24),
 
               _field(
@@ -216,6 +201,136 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
         ),
       ),
     );
+  }
+
+  /// ຮູບຮ້ານ + ປຸ່ມກ້ອງ. ຫຍໍ້ຮູບຢູ່ client ກ່ອນສົ່ງ ເພື່ອບໍ່ໃຫ້ອັບຮູບ 5 MB
+  /// ຂຶ້ນໄປໂດຍບໍ່ຈຳເປັນ ແລະ ບໍ່ໃຫ້ຖານຂໍ້ມູນໃຫຍ່ໂດຍບໍ່ມີເຫດຜົນ.
+  Widget _logoPicker() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                  color: FilbyColors.primary.withValues(alpha: 0.2),
+                  blurRadius: 20),
+            ],
+          ),
+          child: const ShopLogo(size: 90, radius: 20, fit: BoxFit.cover),
+        ),
+        if (_uploadingLogo)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          right: -6,
+          bottom: -6,
+          child: GestureDetector(
+            onTap: _uploadingLogo ? null : _pickLogo,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: FilbyColors.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: FilbyColors.bg, width: 3),
+              ),
+              child: const Icon(Icons.photo_camera_rounded,
+                  size: 15, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickLogo() async {
+    final hasLogo = AuthService.currentUser?.logoUrl != null;
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: FilbyColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined,
+                  color: FilbyColors.primary),
+              title: Text('ເລືອກຮູບຈາກເຄື່ອງ',
+                  style: GoogleFonts.notoSansLao(fontSize: 14)),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined,
+                  color: FilbyColors.primary),
+              title: Text('ຖ່າຍຮູບໃໝ່',
+                  style: GoogleFonts.notoSansLao(fontSize: 14)),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            if (hasLogo)
+              ListTile(
+                leading: const Icon(Icons.delete_outline,
+                    color: Color(0xFFE53935)),
+                title: Text('ລຶບຮູບ ໃຊ້ໂລໂກ້ Filby ແທນ',
+                    style: GoogleFonts.notoSansLao(
+                        fontSize: 14, color: const Color(0xFFE53935))),
+                onTap: () => Navigator.pop(ctx, 'delete'),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !mounted) return;
+
+    setState(() => _uploadingLogo = true);
+    String? err;
+
+    if (action == 'delete') {
+      err = await AuthService.deleteLogo();
+    } else {
+      final picked = await ImagePicker().pickImage(
+        source: action == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 512,          // ໂລໂກ້ບໍ່ຕ້ອງໃຫຍ່ກວ່ານີ້
+        maxHeight: 512,
+        imageQuality: 82,
+      );
+      if (picked == null) {
+        if (mounted) setState(() => _uploadingLogo = false);
+        return;
+      }
+      final bytes = await picked.readAsBytes();
+      err = await AuthService.uploadLogo(bytes, picked.name);
+    }
+
+    if (!mounted) return;
+    setState(() => _uploadingLogo = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(err ??
+          (action == 'delete' ? 'ລຶບຮູບຮ້ານແລ້ວ' : 'ປ່ຽນຮູບຮ້ານແລ້ວ')),
+      backgroundColor:
+          err == null ? FilbyColors.success : const Color(0xFFE74C3C),
+    ));
   }
 
   Widget _field({
