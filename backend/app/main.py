@@ -68,18 +68,42 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE shops ADD COLUMN IF NOT EXISTS deposit_multiplier INTEGER NOT NULL DEFAULT 2",
                 "ALTER TABLE shops ADD COLUMN IF NOT EXISTS last_review_at TIMESTAMPTZ",
                 "CREATE INDEX IF NOT EXISTS ix_shops_owner_id ON shops (owner_id)",
-                # ── Backfill ຄັ້ງດຽວ ──────────────────────────────────────
-                # ຮ້ານທີ່ມີວົງເງິນຢູ່ກ່ອນລະບົບມັດຈຳ ຍັງບໍ່ໄດ້ວາງມັດຈຳ. ຖ້າປ່ອຍໄວ້
-                # effective_limit ຈະກາຍເປັນ 0 ແລ້ວສັ່ງເຄື່ອງບໍ່ໄດ້ທັນທີ. ຈຶ່ງໃຫ້
-                # unsecured_allowance ເທົ່າກັບວົງເງິນເດີມ — ພຶດຕິກຳຄືເກົ່າ ແຕ່
-                # ດຽວນີ້ວົງເງິນຖືກບັງຄັບໃຊ້ຈິງ. last_review_at ກັນບໍ່ໃຫ້ແລ່ນຊ້ຳ
-                # ແລະ ບໍ່ໃຫ້ລົບລ້າງຄ່າທີ່ຝ່າຍບໍລິຫານປັບດ້ວຍມືພາຍຫຼັງ.
-                "UPDATE shops SET unsecured_allowance = credit_limit, last_review_at = NOW() "
-                "WHERE last_review_at IS NULL AND credit_limit > 0",
+                "CREATE TABLE IF NOT EXISTS schema_migrations ("
+                "  key VARCHAR(120) PRIMARY KEY,"
+                "  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
             ]:
                 conn.execute(text(stmt))
             conn.commit()
         print(">>> Column migrations applied")
+    except Exception as e:
+        print(f">>> Column migration warning: {e}")
+
+    # ── Backfill ທີ່ຕ້ອງແລ່ນຄັ້ງດຽວຈິງໆ ───────────────────────────────
+    # ຮ້ານທີ່ມີວົງເງິນຢູ່ກ່ອນລະບົບມັດຈຳ ຍັງບໍ່ໄດ້ວາງມັດຈຳ ຈຶ່ງໃຫ້ unsecured
+    # allowance ເທົ່າວົງເງິນເດີມ ເພື່ອບໍ່ໃຫ້ສັ່ງເຄື່ອງບໍ່ໄດ້ກະທັນຫັນ.
+    #
+    # ຫ້າມໃຊ້ເງື່ອນໄຂແບບ "WHERE last_review_at IS NULL" — ມັນເປັນຈິງອີກທຸກເທື່ອ
+    # ທີ່ມີຮ້ານໃໝ່ຖືກອະນຸມັດ ດັ່ງນັ້ນທຸກ restart ຈະຍົກເວັ້ນມັດຈຳໃຫ້ຮ້ານໃໝ່ໂດຍ
+    # ອັດຕະໂນມັດ ຊຶ່ງທຳລາຍຫຼັກປະກັນທັງໝົດ. ໃຊ້ marker ໃນຕາຕະລາງແທນ.
+    try:
+        from sqlalchemy import text
+        KEY = "backfill_unsecured_allowance_v1"
+        with engine.connect() as conn:
+            done = conn.execute(
+                text("SELECT 1 FROM schema_migrations WHERE key = :k"), {"k": KEY}
+            ).scalar()
+            if done:
+                print(">>> Backfill already applied, skipping")
+            else:
+                n = conn.execute(text(
+                    "UPDATE shops SET unsecured_allowance = credit_limit, "
+                    "last_review_at = NOW() WHERE credit_limit > 0"
+                )).rowcount
+                conn.execute(text(
+                    "INSERT INTO schema_migrations (key) VALUES (:k) "
+                    "ON CONFLICT (key) DO NOTHING"), {"k": KEY})
+                conn.commit()
+                print(f">>> Backfill applied to {n} shop(s)")
     except Exception as e:
         print(f">>> Column migration warning: {e}")
 
