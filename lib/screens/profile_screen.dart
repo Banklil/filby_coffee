@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/credit_terms.dart';
+import 'notifications_screen.dart';
 import 'shop_info_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -17,11 +18,18 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _credit;
   bool _loadingCredit = true;
+  int _unread = 0;
 
   @override
   void initState() {
     super.initState();
     _loadCredit();
+    _loadUnread();
+  }
+
+  Future<void> _loadUnread() async {
+    final n = await NotificationBadge.unreadCount();
+    if (mounted) setState(() => _unread = n);
   }
 
   Future<void> _loadCredit() async {
@@ -325,8 +333,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   label: 'ວິທີຊຳລະ',
                   onTap: (ctx) async => _showPaymentMethods(ctx),
                 ),
-                const _MenuRowData(
-                    icon: Icons.notifications_outlined, label: 'ການເຕືອນ'),
+                _MenuRowData(
+                  icon: Icons.notifications_outlined,
+                  label: 'ການເຕືອນ',
+                  badge: _unread,
+                  onTap: (ctx) async {
+                    await Navigator.push(ctx,
+                        MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                    if (mounted) setState(() => _unread = 0);
+                  },
+                ),
                 const _MenuRowData(
                     icon: Icons.language_outlined, label: 'ພາສາ', value: 'ລາວ'),
               ],
@@ -368,12 +384,16 @@ class _MenuRowData {
   /// ແລະ ບອກຜູ້ໃຊ້ຢ່າງຈະແຈ້ງ ແທນທີ່ຈະກົດແລ້ວງຽບໆ.
   final Future<void> Function(BuildContext)? onTap;
 
+  /// ຈຳນວນທີ່ຍັງບໍ່ໄດ້ອ່ານ — 0 ຫຼື null = ບໍ່ສະແດງ
+  final int? badge;
+
   const _MenuRowData({
     required this.icon,
     required this.label,
     this.value,
     this.isDestructive = false,
     this.onTap,
+    this.badge,
   });
 
   bool get enabled => onTap != null || isDestructive;
@@ -472,6 +492,21 @@ class _MenuRow extends StatelessWidget {
                 ),
               ),
             ),
+            if ((data.badge ?? 0) > 0) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE53935),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text('${data.badge}',
+                    style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white)),
+              ),
+              const SizedBox(width: 6),
+            ],
             if (data.value != null) ...[
               Text(data.value!, style: const TextStyle(fontSize: 12, color: FilbyColors.textMuted)),
               const SizedBox(width: 4),

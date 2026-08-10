@@ -16,4 +16,6 @@ class ShopOwner(Base):
     active    = Column(Boolean, default=True)
     # Remaining coffee-bean stock for this shop, in kilograms.
     bean_balance_kg = Column(Float, default=0, nullable=False, server_default="0")
+    # ເວລາທີ່ເປີດເບິ່ງການເຕືອນຄັ້ງສຸດທ້າຍ — ອັນທີ່ໃໝ່ກວ່ານີ້ຖືວ່າຍັງບໍ່ໄດ້ອ່ານ
+    notifications_seen_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

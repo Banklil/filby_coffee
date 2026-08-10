@@ -10,7 +10,7 @@ from .database import engine, Base
 from . import models  # ensure all models are imported before create_all
 
 from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router, prospects, shop_auth, finance
-from .routers import bean_orders, credit_apps, merchant_report, admin_stats, payment
+from .routers import bean_orders, credit_apps, merchant_report, admin_stats, payment, notifications
 
 
 def _ensure_default_admin():
@@ -68,6 +68,7 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE shops ADD COLUMN IF NOT EXISTS deposit_multiplier INTEGER NOT NULL DEFAULT 2",
                 "ALTER TABLE shops ADD COLUMN IF NOT EXISTS last_review_at TIMESTAMPTZ",
                 "CREATE INDEX IF NOT EXISTS ix_shops_owner_id ON shops (owner_id)",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS notifications_seen_at TIMESTAMPTZ",
                 "CREATE TABLE IF NOT EXISTS schema_migrations ("
                 "  key VARCHAR(120) PRIMARY KEY,"
                 "  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
@@ -171,6 +172,7 @@ app.include_router(credit_apps.router)
 app.include_router(merchant_report.router)
 app.include_router(admin_stats.router)
 app.include_router(payment.router)
+app.include_router(notifications.router)
 
 # ── Socket.IO real-time (optional — skipped if package missing) ──────
 try:
