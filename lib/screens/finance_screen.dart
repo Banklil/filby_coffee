@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
+import 'entries_screen.dart';
 
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key});
@@ -119,13 +120,47 @@ class _FinanceScreenState extends State<FinanceScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
             const SizedBox(height: 16),
-            Text(
-              'ສະຫຼຸບການເງິນ',
-              style: GoogleFonts.notoSerifLao(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: FilbyColors.textPrimary,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'ສະຫຼຸບການເງິນ',
+                    style: GoogleFonts.notoSerifLao(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: FilbyColors.textPrimary,
+                    ),
+                  ),
+                ),
+                // ບັນຊີລາຍຮັບ-ລາຍຈ່າຍທີ່ຮ້ານບັນທຶກເອງ
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const EntriesScreen()));
+                    _load();
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: FilbyColors.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add, size: 15, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text('ບັນທຶກ',
+                            style: GoogleFonts.notoSansLao(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             // Period tabs

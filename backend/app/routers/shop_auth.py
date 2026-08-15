@@ -293,11 +293,28 @@ def shop_summary(
     db: Session = Depends(get_db),
 ):
     """Income / expense / net-profit + weekly chart + best sellers for the shop.
-    Income = POS sales; expense = bean purchases (bean orders)."""
+
+    ລາຍຮັບ  = ຂາຍຜ່ານ POS  + ລາຍຮັບທີ່ຮ້ານບັນທຶກເອງ
+    ລາຍຈ່າຍ = ຊື້ເມັດກາເຟ + ລາຍຈ່າຍທີ່ຮ້ານບັນທຶກເອງ (ຄ່າເຊົ່າ, ຄ່າແຮງ...)
+
+    ຖ້າບໍ່ນັບລາຍການທີ່ບັນທຶກເອງເຂົ້ານຳ ຕົວເລກໃນໜ້າລາຍງານຈະບໍ່ຕົງກັບ
+    ບັນຊີທີ່ຮ້ານເຫັນ ແລະ ກຳໄລສຸດທິຈະສູງກວ່າຄວາມຈິງ.
+    """
     from datetime import date, timedelta
     from sqlalchemy import func as _f
     from ..models.pos_sale import PosSale
     from ..models.bean_order import BeanOrder
+    from ..models.shop_entry import ShopEntry
+
+    def _manual(kind: str, since, until=None) -> float:
+        q = db.query(_f.coalesce(_f.sum(ShopEntry.amount), 0)).filter(
+            ShopEntry.owner_id == owner.id,
+            ShopEntry.type == kind,
+            ShopEntry.entry_date >= since,
+        )
+        if until is not None:
+            q = q.filter(ShopEntry.entry_date <= until)
+        return float(q.scalar() or 0)
 
     today = date.today()
     if period == "day":
@@ -323,6 +340,9 @@ def shop_summary(
         BeanOrder.status != "cancelled",
     ).scalar() or 0
 
+    manual_income = _manual("income", start)
+    manual_expense = _manual("expense", start)
+
     # ── Weekly chart: income vs expense for the last 7 days ──────────────
     weekly = []
     labels = ["ຈ", "ອ", "ພ", "ພຫ", "ສຸ", "ສ", "ອາ"]
@@ -335,7 +355,11 @@ def shop_summary(
             BeanOrder.owner_id == owner.id, _f.date(BeanOrder.created_at) == d,
             BeanOrder.status != "cancelled",
         ).scalar() or 0
-        weekly.append({"label": labels[d.weekday()], "income": float(inc), "expense": float(exp)})
+        weekly.append({
+            "label": labels[d.weekday()],
+            "income": float(inc) + _manual("income", d, d),
+            "expense": float(exp) + _manual("expense", d, d),
+        })
 
     # ── Best sellers: aggregate item names across POS sales in period ────
     sales = db.query(PosSale).filter(
@@ -355,15 +379,25 @@ def shop_summary(
             row["revenue"] += revenue
     top_items = sorted(agg.values(), key=lambda r: r["revenue"], reverse=True)[:5]
 
+    total_income = float(income) + manual_income
+    total_expense = float(expense) + manual_expense
+
     return {
         "period":          period,
-        "income":          float(income),
-        "expense":         float(expense),
-        "net_profit":      float(income) - float(expense),
+        "income":          total_income,
+        "expense":         total_expense,
+        "net_profit":      total_income - total_expense,
         "sales_count":     int(sales_count),
         "bean_balance_kg": float(owner.bean_balance_kg or 0),
         "weekly":          weekly,
         "top_items":       top_items,
+        # ແຍກໃຫ້ເຫັນວ່າແຕ່ລະຕົວເລກມາຈາກໃສ ເພື່ອໃຫ້ຮ້ານກວດຄືນໄດ້
+        "breakdown": {
+            "pos_sales":      float(income),
+            "manual_income":  manual_income,
+            "bean_purchases": float(expense),
+            "manual_expense": manual_expense,
+        },
     }
 
 

@@ -7,6 +7,7 @@ import 'credit_screen.dart';
 import 'products_screen.dart';
 import 'sales_history_screen.dart';
 import 'notifications_screen.dart';
+import 'entries_screen.dart';
 import '../widgets/shop_logo.dart';
 
 // ── Filby Coffee palette (from logo): deep navy + gold on light ──────────────
@@ -383,6 +384,11 @@ class _HomeScreenState extends State<HomeScreen> {
       })),
       _qi('ສະຫຼຸບ', Icons.bar_chart_rounded, () => Navigator.push(context,
           MaterialPageRoute(builder: (_) => const SalesHistoryScreen()))),
+      _qi('ລາຍຈ່າຍ', Icons.account_balance_wallet_rounded, () async {
+        await Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const EntriesScreen()));
+        _load();
+      }),
       _qi('ສິນເຊື່ອ', Icons.credit_card_rounded, () => Navigator.push(context,
           MaterialPageRoute(builder: (_) => const CreditScreen()))),
       _qi('ລາຍງານ', Icons.description_rounded, null),
