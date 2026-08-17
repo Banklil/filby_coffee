@@ -18,7 +18,15 @@ def _get_owner(credentials: HTTPAuthorizationCredentials = Depends(bearer), db: 
     payload = decode_token(credentials.credentials)
     if not payload or payload.get("type") == "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token ໝົດອາຍຸ")
-    owner = db.query(ShopOwner).filter(ShopOwner.id == int(payload["sub"]), ShopOwner.active == True).first()
+
+    # Token ຂອງພະນັກງານມີ sub ເປັນ "staff:<id>" — int() ຈະ throw ແລະ ກາຍເປັນ 500.
+    # ປະຕິເສດເປັນ 401 ຢ່າງສຸພາບແທນ ພ້ອມກັນບໍ່ໃຫ້ພະນັກງານເຂົ້າ endpoint ຂອງເຈົ້າຂອງຮ້ານ.
+    sub = str(payload.get("sub", ""))
+    if not sub.isdigit():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="ບັນຊີນີ້ບໍ່ມີສິດເຂົ້າເຖິງສ່ວນນີ້")
+
+    owner = db.query(ShopOwner).filter(ShopOwner.id == int(sub), ShopOwner.active == True).first()
     if not owner:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="ບໍ່ພົບບັນຊີ")
     return owner

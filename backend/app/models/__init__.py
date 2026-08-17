@@ -13,3 +13,4 @@ from .credit_application import CreditApplication
 from .pos_sale import PosSale
 from .credit import CreditLedger, CreditHold, DepositMovement
 from .shop_entry import ShopEntry
+from .staff import Staff, Attendance, StaffAdjustment, PayrollRun, Payslip

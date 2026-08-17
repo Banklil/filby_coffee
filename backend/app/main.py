@@ -10,7 +10,7 @@ from .database import engine, Base
 from . import models  # ensure all models are imported before create_all
 
 from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router, prospects, shop_auth, finance
-from .routers import bean_orders, credit_apps, merchant_report, admin_stats, payment, notifications, shop_logo, shop_entries
+from .routers import bean_orders, credit_apps, merchant_report, admin_stats, payment, notifications, shop_logo, shop_entries, staff_admin, staff_portal
 
 
 def _ensure_default_admin():
@@ -72,6 +72,9 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS logo_data BYTEA",
                 "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(40)",
                 "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS logo_updated_at TIMESTAMPTZ",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS geo_lat DOUBLE PRECISION",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS geo_lng DOUBLE PRECISION",
+                "ALTER TABLE shop_owners ADD COLUMN IF NOT EXISTS geo_radius_m INTEGER NOT NULL DEFAULT 150",
                 "CREATE TABLE IF NOT EXISTS schema_migrations ("
                 "  key VARCHAR(120) PRIMARY KEY,"
                 "  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
@@ -178,6 +181,8 @@ app.include_router(payment.router)
 app.include_router(notifications.router)
 app.include_router(shop_logo.router)
 app.include_router(shop_entries.router)
+app.include_router(staff_admin.router)
+app.include_router(staff_portal.router)
 
 # ── Socket.IO real-time (optional — skipped if package missing) ──────
 try:

@@ -22,4 +22,8 @@ class ShopOwner(Base):
     logo_data = Column(LargeBinary, nullable=True)
     logo_mime = Column(String(40), nullable=True)
     logo_updated_at = Column(DateTime(timezone=True), nullable=True)
+    # ທີ່ຕັ້ງຮ້ານ ສຳລັບກວດລັດສະໝີຕອນພະນັກງານກົດເຂົ້າວຽກ
+    geo_lat      = Column(Float, nullable=True)
+    geo_lng      = Column(Float, nullable=True)
+    geo_radius_m = Column(Integer, nullable=False, default=150, server_default="150")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
