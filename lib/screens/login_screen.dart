@@ -237,6 +237,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 14),
+                  // ພະນັກງານໃຊ້ຄົນລະບັນຊີກັບເຈົ້າຂອງຮ້ານ ຈຶ່ງແຍກທາງເຂົ້າໄວ້
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed('/staff-login'),
+                      icon: const Icon(Icons.fingerprint_rounded, size: 17),
+                      label: const Text('ເປັນພະນັກງານ? ກົດເຂົ້າວຽກທີ່ນີ້',
+                          style: TextStyle(fontSize: 13)),
+                      style: TextButton.styleFrom(
+                          foregroundColor: FilbyColors.textSecondary),
+                    ),
+                  ),
                   const SizedBox(height: 32),
                 ],
               ),

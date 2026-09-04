@@ -4,6 +4,9 @@ import 'theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_nav.dart';
 import 'services/auth_service.dart';
+import 'services/staff_service.dart';
+import 'screens/staff/staff_login_screen.dart';
+import 'screens/staff/staff_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +43,7 @@ class FilbyApp extends StatelessWidget {
       home: const _AuthGate(),
       routes: {
         '/login': (_) => const LoginScreen(),
+        '/staff-login': (_) => const StaffLoginScreen(),
       },
     );
   }
@@ -55,6 +59,7 @@ class _AuthGate extends StatefulWidget {
 class _AuthGateState extends State<_AuthGate> {
   bool _loading = true;
   bool _loggedIn = false;
+  bool _isStaff = false;
 
   @override
   void initState() {
@@ -63,6 +68,11 @@ class _AuthGateState extends State<_AuthGate> {
   }
 
   Future<void> _check() async {
+    // ກວດບັນຊີພະນັກງານກ່ອນ — ສອງຝ່າຍໃຊ້ token ຄົນລະອັນ
+    if (await StaffAuth.isLoggedIn()) {
+      if (mounted) setState(() { _loading = false; _isStaff = true; });
+      return;
+    }
     final loggedIn = await AuthService.isLoggedIn();
     if (mounted) setState(() { _loading = false; _loggedIn = loggedIn; });
   }
@@ -75,6 +85,7 @@ class _AuthGateState extends State<_AuthGate> {
         body: Center(child: CircularProgressIndicator(color: FilbyColors.primary)),
       );
     }
+    if (_isStaff) return const StaffShell();
     return _loggedIn ? const MainNav() : const LoginScreen();
   }
 }

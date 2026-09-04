@@ -10,7 +10,7 @@ from .database import engine, Base
 from . import models  # ensure all models are imported before create_all
 
 from .routers import auth, dashboard, shops, applications, orders, credits, products, analytics, reports, settings as settings_router, prospects, shop_auth, finance
-from .routers import bean_orders, credit_apps, merchant_report, admin_stats, payment, notifications, shop_logo, shop_entries, staff_admin, staff_portal
+from .routers import bean_orders, credit_apps, merchant_report, admin_stats, payment, notifications, shop_logo, shop_entries, staff_admin, staff_portal, staff_audit
 
 
 def _ensure_default_admin():
@@ -183,6 +183,7 @@ app.include_router(shop_logo.router)
 app.include_router(shop_entries.router)
 app.include_router(staff_admin.router)
 app.include_router(staff_portal.router)
+app.include_router(staff_audit.router)
 
 # ── Socket.IO real-time (optional — skipped if package missing) ──────
 try:
